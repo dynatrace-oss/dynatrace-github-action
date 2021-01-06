@@ -17,6 +17,7 @@ export async function sendMetrics(
   token: string,
   metrics: Metric[]
 ): Promise<void> {
-  core.debug(`Sending ${metrics.length} metrics`)
+  core.info(`Sending ${metrics.length} metrics`)
+  core.info(`Sending to ${url}`)
   
 }
