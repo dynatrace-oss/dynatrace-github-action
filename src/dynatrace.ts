@@ -17,19 +17,6 @@ export interface Event {
   dimensions: Map<string, string>
 }
 
-interface TagAttachRule {
-  meTypes: string[]
-  tags: Tag[]
-}
-
-interface Tag {
-  context: string
-  key: string
-  value: string
-}
-
-
-
 function getClient(token: string, content: string): httpm.HttpClient {
   return new httpm.HttpClient('dt-http-client', [], {
     headers: {
@@ -121,8 +108,7 @@ export async function sendEvents(
         });
       }
     }
-
-    
+    // create Dynatrace event structure
     const event = {
       "eventType": e.type,
       "attachRules": {
