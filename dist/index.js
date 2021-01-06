@@ -37,11 +37,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__webpack_require__(186));
+//import {wait} from './wait'
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const url = core.getInput('url');
-            core.debug(`hello dynatrace`);
+            core.debug(`hello dynatrace` + url);
         }
         catch (error) {
             core.setFailed(error.message);

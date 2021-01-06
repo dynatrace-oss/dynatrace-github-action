@@ -1,11 +1,11 @@
 import * as core from '@actions/core'
-import {wait} from './wait'
+//import {wait} from './wait'
 
 async function run(): Promise<void> {
   try {
     const url: string = core.getInput('url')
-    core.debug(`hello dynatrace`) 
-    console.log(`Hello Dynatrace`)
+    core.debug(`hello dynatrace` + url) 
+    
     
 
     
