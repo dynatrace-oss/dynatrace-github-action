@@ -36,7 +36,7 @@ export async function sendMetrics(
   for (const m of metrics) {
     lines = lines.concat(m.metric).concat(' ').concat(m.value.toString()).concat('\n')
   }
-
+  core.info("here")
   core.info(lines)
 
   const res: httpm.HttpClientResponse = await http.post(
