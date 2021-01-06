@@ -46,6 +46,7 @@ function run() {
             core.info("Hey ho lets go!");
             core.info(core.getInput('metrics'));
             const metrics = yaml.load(core.getInput('metrics'));
+            core.info(`Hello ${metrics.length}`);
             core.info(core.getInput('events'));
         }
         catch (error) {
