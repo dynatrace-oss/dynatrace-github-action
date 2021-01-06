@@ -54,9 +54,12 @@ function sendMetrics(url, token, metrics) {
         let lines = "";
         for (const m of metrics) {
             lines = lines.concat(m.metric);
+            m.dimensions.forEach((value, key) => {
+                lines = lines.concat(',').concat(key).concat('="').concat(value).concat('"');
+            });
             lines = lines.concat(' ').concat(m.value).concat('\n');
         }
-        core.info("here");
+        core.info(lines);
         const res = yield http.post(url.concat('/api/v2/metrics/ingest'), lines);
         if (res.message.statusCode === undefined || res.message.statusCode >= 400) {
             throw new Error(`HTTP request failed: ${res.message.statusMessage}`);

@@ -34,10 +34,12 @@ export async function sendMetrics(
 
   for (const m of metrics) {
     lines = lines.concat(m.metric);
-
+    m.dimensions.forEach((value: string, key: string) => {
+      lines = lines.concat(',').concat(key).concat('="').concat(value).concat('"');
+    });
     lines = lines.concat(' ').concat(m.value).concat('\n');
   }
-  core.info("here");
+  core.info(lines);
   
 
   const res: httpm.HttpClientResponse = await http.post(
