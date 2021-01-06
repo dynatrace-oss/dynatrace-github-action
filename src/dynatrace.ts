@@ -93,7 +93,7 @@ export async function sendEvents(
     // extract tagging rules
     for (const t of e.tags) {
       const arr = t.split(":");
-      if(arr.length == 2) {
+      if(arr.length === 2) {
         event.attachRules.tagRule.push({
           "meTypes": [ arr[0] ],
           "tags": [ 
@@ -103,7 +103,7 @@ export async function sendEvents(
             }
           ]
         });
-      } else if (arr.length == 3) {
+      } else if (arr.length === 3) {
         // tag with key and value 
         event.attachRules.tagRule.push({
           "meTypes": [ arr[0] ],
