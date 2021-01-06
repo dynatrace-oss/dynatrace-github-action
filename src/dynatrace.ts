@@ -17,6 +17,19 @@ export interface Event {
   dimensions: Map<string, string>
 }
 
+interface TagAttachRule {
+  meTypes: string[]
+  tags: Tag[]
+}
+
+interface Tag {
+  context: string
+  key: string
+  value: string
+}
+
+
+
 function getClient(token: string, content: string): httpm.HttpClient {
   return new httpm.HttpClient('dt-http-client', [], {
     headers: {
@@ -80,21 +93,12 @@ export async function sendEvents(
   const http: httpm.HttpClient = getClient(token, 'application/json');
   
   for (const e of events) {
-    const event = {
-      "eventType": e.type,
-      "attachRules": {
-        "entityIds": e.entities,
-        "tagRule": Array(),
-      },
-      "source": e.source,
-      "description" : e.description,
-      "title" : e.title
-    }
+    const tagAttachRules = [];
     // extract tagging rules
     for (const t of e.tags) {
       const arr = t.split(":");
       if(arr.length === 2) {
-        event.attachRules.tagRule.push({
+        tagAttachRules.push({
           "meTypes": [ arr[0] ],
           "tags": [ 
             { 
@@ -105,7 +109,7 @@ export async function sendEvents(
         });
       } else if (arr.length === 3) {
         // tag with key and value 
-        event.attachRules.tagRule.push({
+        tagAttachRules.push({
           "meTypes": [ arr[0] ],
           "tags": [ 
             { 
@@ -116,6 +120,18 @@ export async function sendEvents(
           ]
         });
       }
+    }
+
+    
+    const event = {
+      "eventType": e.type,
+      "attachRules": {
+        "entityIds": e.entities,
+        "tagRule": tagAttachRules,
+      },
+      "source": e.source,
+      "description" : e.description,
+      "title" : e.title
     }
 
     core.info(JSON.stringify(event));
