@@ -38,3 +38,30 @@ jobs:
                 branch: "${{ github.ref }}"
                 event: "${{ github.event_name }}"
                 owner: bob
+          events: |
+            - title: "event1"
+              description: "description text"
+              source: GitHub
+              entities:
+                - HOST-123
+              tags:
+                - HOST:key:value
+                - SERVICE:key
+              dimensions:
+                project: "${{ github.repository }}"
+                branch: "${{ github.ref }}"
+                event: "${{ github.event_name }}"
+                owner: wolfgang
+            - title: "event2"
+              description: "description text"
+              source: GitHub
+              entities:
+                - HOST-123
+              tags:
+                - HOST:key:value
+                - SERVICE:key
+              dimensions:
+                project: "${{ github.repository }}"
+                branch: "${{ github.ref }}"
+                event: "${{ github.event_name }}"
+                owner: bob

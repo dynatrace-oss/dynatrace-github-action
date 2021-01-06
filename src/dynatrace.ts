@@ -9,8 +9,11 @@ export interface Metric {
 
 export interface Event {
   title: string
-  text: string
-  severity: string
+  description: string
+  source: string
+  entities: string[]
+  tags: string[]
+  dimensions: Map<string, string>
 }
 
 function getMetricClient(token: string): httpm.HttpClient {
