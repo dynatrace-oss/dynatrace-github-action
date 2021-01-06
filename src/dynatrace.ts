@@ -13,11 +13,11 @@ export interface Event {
   severity: string
 }
 
-function getClient(token: string): httpm.HttpClient {
+function getMetricClient(token: string): httpm.HttpClient {
   return new httpm.HttpClient('dt-http-client', [], {
     headers: {
       'Authorization': 'Api-Token '.concat(token),
-      'Content-Type': 'application/json'
+      'Content-Type': 'text/plain'
     }
   })
 }
@@ -29,5 +29,23 @@ export async function sendMetrics(
 ): Promise<void> {
   core.info(`Sending ${metrics.length} metrics`)
   core.info(`Sending to ${url}`)
+
+  const http: httpm.HttpClient = getMetricClient(token)
+  var lines: string = "";
+
+  for (const m of metrics) {
+    lines = lines.concat(m.metric).concat(' ').concat(m.value.toString()).concat('')
+  }
+
+  core.info(lines)
+
+  const res: httpm.HttpClientResponse = await http.post(
+    url.concat('/api/v2/metrics/ingest'),
+    lines
+  )
+
+  if (res.message.statusCode === undefined || res.message.statusCode >= 400) {
+    throw new Error(`HTTP request failed: ${res.message.statusMessage}`)
+  }
   
 }

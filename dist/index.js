@@ -39,11 +39,11 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.sendMetrics = void 0;
 const core = __importStar(__webpack_require__(186));
 const httpm = __importStar(__webpack_require__(925));
-function getClient(token) {
+function getMetricClient(token) {
     return new httpm.HttpClient('dt-http-client', [], {
         headers: {
             'Authorization': 'Api-Token '.concat(token),
-            'Content-Type': 'application/json'
+            'Content-Type': 'text/plain'
         }
     });
 }
@@ -51,6 +51,16 @@ function sendMetrics(url, token, metrics) {
     return __awaiter(this, void 0, void 0, function* () {
         core.info(`Sending ${metrics.length} metrics`);
         core.info(`Sending to ${url}`);
+        const http = getMetricClient(token);
+        var lines = "";
+        for (const m of metrics) {
+            lines = lines.concat(m.metric).concat(' ').concat(m.value.toString()).concat('');
+        }
+        core.info(lines);
+        const res = yield http.post(url.concat('/api/v2/metrics/ingest'), lines);
+        if (res.message.statusCode === undefined || res.message.statusCode >= 400) {
+            throw new Error(`HTTP request failed: ${res.message.statusMessage}`);
+        }
     });
 }
 exports.sendMetrics = sendMetrics;
