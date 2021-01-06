@@ -9,6 +9,7 @@ async function run(): Promise<void> {
     core.info("Hey ho lets go!") 
     core.info(core.getInput('metrics')) 
     const metrics = yaml.load(core.getInput('metrics')) as d.Metric[];
+    core.info(`Hello ${metrics.length}`); 
     
     core.info(core.getInput('events')) 
     

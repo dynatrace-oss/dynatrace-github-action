@@ -1,4 +1,3 @@
-import * as core from '@actions/core'
 
 export interface Metric {
   type: string
