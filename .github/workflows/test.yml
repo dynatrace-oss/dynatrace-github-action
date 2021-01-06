@@ -40,10 +40,11 @@ jobs:
                 owner: bob
           events: |
             - title: "event1"
+              type: AVAILABILITY_EVENT    
               description: "description text"
               source: GitHub
               entities:
-                - HOST-123
+                - MOBILE_APPLICATION-C061BED4799B41C5
               tags:
                 - HOST:key:value
                 - SERVICE:key
@@ -53,10 +54,11 @@ jobs:
                 event: "${{ github.event_name }}"
                 owner: wolfgang
             - title: "event2"
+              type: CUSTOM_INFO
               description: "description text"
               source: GitHub
               entities:
-                - HOST-123
+                - MOBILE_APPLICATION-C061BED4799B41C5
               tags:
                 - HOST:key:value
                 - SERVICE:key

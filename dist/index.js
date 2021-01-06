@@ -64,7 +64,6 @@ function sendMetrics(url, token, metrics) {
         for (const m of metrics) {
             lines = lines.concat(safeMetricKey(m.metric));
             for (const [key, value] of Object.entries(m.dimensions)) {
-                core.info(key);
                 if (value && value.length > 0) {
                     lines = lines.concat(',').concat(safeDimKey(key)).concat('="').concat(safeDimValue(value)).concat('"');
                 }
@@ -94,6 +93,7 @@ function sendEvents(url, token, events) {
                 "description": e.description,
                 "title": e.title
             };
+            core.info(JSON.stringify(event));
             const res = yield http.post(url.concat('/api/v1/events'), JSON.stringify(event));
             if (res.message.statusCode === undefined || res.message.statusCode >= 400) {
                 throw new Error(`HTTP request failed: ${res.message.statusMessage}`);
@@ -148,11 +148,9 @@ function run() {
         try {
             const url = core.getInput('url');
             const token = core.getInput('token');
-            core.info(core.getInput('metrics'));
             const metrics = yaml.load(core.getInput('metrics'));
             d.sendMetrics(url, token, metrics);
             const events = yaml.load(core.getInput('events'));
-            core.info(core.getInput('events'));
             d.sendEvents(url, token, events);
         }
         catch (error) {
