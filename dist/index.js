@@ -36,14 +36,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.sendMetrics = void 0;
+exports.sendEvents = exports.sendMetrics = void 0;
 const core = __importStar(__webpack_require__(186));
 const httpm = __importStar(__webpack_require__(925));
-function getMetricClient(token) {
+function getClient(token, content) {
     return new httpm.HttpClient('dt-http-client', [], {
         headers: {
             'Authorization': 'Api-Token '.concat(token),
-            'Content-Type': 'text/plain'
+            'Content-Type': content
         }
     });
 }
@@ -59,7 +59,7 @@ function safeDimValue(val) {
 function sendMetrics(url, token, metrics) {
     return __awaiter(this, void 0, void 0, function* () {
         core.info(`Sending ${metrics.length} metrics`);
-        const http = getMetricClient(token);
+        const http = getClient(token, 'text/plain');
         let lines = "";
         for (const m of metrics) {
             lines = lines.concat(safeMetricKey(m.metric));
@@ -79,6 +79,19 @@ function sendMetrics(url, token, metrics) {
     });
 }
 exports.sendMetrics = sendMetrics;
+function sendEvents(url, token, events) {
+    return __awaiter(this, void 0, void 0, function* () {
+        core.info(`Sending ${events.length} events`);
+        const http = getClient(token, 'application/json');
+        for (const m of events) {
+        }
+        const res = yield http.post(url.concat('/api/v1/events'), "");
+        if (res.message.statusCode === undefined || res.message.statusCode >= 400) {
+            throw new Error(`HTTP request failed: ${res.message.statusMessage}`);
+        }
+    });
+}
+exports.sendEvents = sendEvents;
 
 
 /***/ }),
@@ -129,7 +142,8 @@ function run() {
             const metrics = yaml.load(core.getInput('metrics'));
             d.sendMetrics(url, token, metrics);
             const events = yaml.load(core.getInput('events'));
-            core.info(`Number of events to send: ${events.length}`);
+            core.info(core.getInput('events'));
+            d.sendEvents(url, token, events);
         }
         catch (error) {
             core.setFailed(error.message);

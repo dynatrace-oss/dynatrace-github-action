@@ -16,11 +16,11 @@ export interface Event {
   dimensions: Map<string, string>
 }
 
-function getMetricClient(token: string): httpm.HttpClient {
+function getClient(token: string, content: string): httpm.HttpClient {
   return new httpm.HttpClient('dt-http-client', [], {
     headers: {
       'Authorization': 'Api-Token '.concat(token),
-      'Content-Type': 'text/plain'
+      'Content-Type': content
     }
   })
 }
@@ -44,7 +44,7 @@ export async function sendMetrics(
 ): Promise<void> {
   core.info(`Sending ${metrics.length} metrics`);
   
-  const http: httpm.HttpClient = getMetricClient(token);
+  const http: httpm.HttpClient = getClient(token, 'text/plain');
   let lines = "";
 
   for (const m of metrics) {
@@ -63,6 +63,32 @@ export async function sendMetrics(
   const res: httpm.HttpClientResponse = await http.post(
     url.concat('/api/v2/metrics/ingest'),
     lines
+  );
+
+  if (res.message.statusCode === undefined || res.message.statusCode >= 400) {
+    throw new Error(`HTTP request failed: ${res.message.statusMessage}`);
+  } 
+}
+
+export async function sendEvents(
+  url: string,
+  token: string,
+  events: Event[]
+): Promise<void> {
+  core.info(`Sending ${events.length} events`);
+  
+  const http: httpm.HttpClient = getClient(token, 'application/json');
+  
+
+  for (const m of events) {
+    
+  }
+  
+  
+
+  const res: httpm.HttpClientResponse = await http.post(
+    url.concat('/api/v1/events'),
+    ""
   );
 
   if (res.message.statusCode === undefined || res.message.statusCode >= 400) {

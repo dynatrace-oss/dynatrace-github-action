@@ -11,7 +11,8 @@ async function run(): Promise<void> {
     d.sendMetrics(url, token, metrics);
 
     const events = yaml.load(core.getInput('events')) as d.Event[];
-    core.info(`Number of events to send: ${events.length}`); 
+    core.info(core.getInput('events')) 
+    d.sendEvents(url, token, events);
     
   } catch (error) {
     core.setFailed(error.message)
