@@ -23,11 +23,11 @@ function getMetricClient(token: string): httpm.HttpClient {
 }
 
 function safeMetricKey(mkey: string): string {
-  return mkey;
+  return mkey.toLowerCase().replace(/[^0-9a-z_-]/gi, '');
 }
 
 function safeDimKey(dkey: string): string {
-  return dkey;
+  return dkey.toLowerCase().replace(/[^0-9a-z_-]/gi, '');
 }
 
 function safeDimValue(val: string): string {

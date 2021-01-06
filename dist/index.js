@@ -48,10 +48,10 @@ function getMetricClient(token) {
     });
 }
 function safeMetricKey(mkey) {
-    return mkey;
+    return mkey.toLowerCase().replace(/[^0-9a-z_-]/gi, '');
 }
 function safeDimKey(dkey) {
-    return dkey;
+    return dkey.toLowerCase().replace(/[^0-9a-z_-]/gi, '');
 }
 function safeDimValue(val) {
     return val;
