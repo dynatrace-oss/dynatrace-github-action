@@ -9,11 +9,10 @@ async function run(): Promise<void> {
     core.info("Hey ho lets go!") 
     core.info(core.getInput('metrics')) 
     const metrics = yaml.load(core.getInput('metrics')) as d.Metric[];
-    core.info(`Hello ${metrics.length}`); 
-    
-    core.info(core.getInput('events')) 
-    
+    core.info(`Number of metrics to send: ${metrics.length}`); 
 
+    const events = yaml.load(core.getInput('events')) as d.Event[];
+    core.info(`Number of events to send: ${events.length}`); 
     
   } catch (error) {
     core.setFailed(error.message)
