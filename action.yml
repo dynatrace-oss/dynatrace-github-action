@@ -8,6 +8,12 @@ inputs:
   token:
     required: true
     description: 'A valid Dynatrace API-token'
+  metrics:
+    description: 'A list of metrics objects to send'
+    default: '[]'
+  events:
+    description: 'A list of event objects to send'
+    default: '[]'
 runs:
   using: 'node12'
   main: 'dist/index.js'
