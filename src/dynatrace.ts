@@ -47,6 +47,7 @@ export async function sendMetrics(
   for (const m of metrics) {
     lines = lines.concat(safeMetricKey(m.metric));
     for (const [key, value] of Object.entries(m.dimensions)) {
+      core.info(key);
       if(value && value.length > 0) {
         lines = lines.concat(',').concat(safeDimKey(key)).concat('="').concat(safeDimValue(value)).concat('"');
       } 
