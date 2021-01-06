@@ -87,12 +87,40 @@ function sendEvents(url, token, events) {
                 "eventType": e.type,
                 "attachRules": {
                     "entityIds": e.entities,
-                    "tagRule": []
+                    "tagRule": Array(),
                 },
                 "source": e.source,
                 "description": e.description,
                 "title": e.title
             };
+            // extract tagging rules
+            for (const t of e.tags) {
+                const arr = t.split(":");
+                if (arr.length == 2) {
+                    event.attachRules.tagRule.push({
+                        "meTypes": [arr[0]],
+                        "tags": [
+                            {
+                                "context": "CONTEXTLESS",
+                                "key": arr[1]
+                            }
+                        ]
+                    });
+                }
+                else if (arr.length == 3) {
+                    // tag with key and value 
+                    event.attachRules.tagRule.push({
+                        "meTypes": [arr[0]],
+                        "tags": [
+                            {
+                                "context": "CONTEXTLESS",
+                                "key": arr[1],
+                                "value": arr[2]
+                            }
+                        ]
+                    });
+                }
+            }
             core.info(JSON.stringify(event));
             const res = yield http.post(url.concat('/api/v1/events'), JSON.stringify(event));
             if (res.message.statusCode === undefined || res.message.statusCode >= 400) {

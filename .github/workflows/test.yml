@@ -46,8 +46,8 @@ jobs:
               entities:
                 - MOBILE_APPLICATION-C061BED4799B41C5
               tags:
-                - HOST:key:value
-                - SERVICE:key
+                - APPLICATION:github
+                - SERVICE:github:value
               dimensions:
                 project: "${{ github.repository }}"
                 branch: "${{ github.ref }}"
