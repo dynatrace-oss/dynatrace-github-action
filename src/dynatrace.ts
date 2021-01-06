@@ -3,8 +3,8 @@ import * as httpm from '@actions/http-client'
 
 export interface Metric {
   metric: string
-  value: number
-  dimensions: string[]
+  value: string
+  dimensions: Map<string, string>
 }
 
 export interface Event {
@@ -33,7 +33,9 @@ export async function sendMetrics(
   let lines = "";
 
   for (const m of metrics) {
-    lines = lines.concat(m.metric).concat(' ').concat(m.value.toString()).concat('\n');
+    lines = lines.concat(m.metric);
+
+    lines = lines.concat(' ').concat(m.value).concat('\n');
   }
   core.info("here");
   

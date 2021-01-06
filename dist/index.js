@@ -53,7 +53,8 @@ function sendMetrics(url, token, metrics) {
         const http = getMetricClient(token);
         let lines = "";
         for (const m of metrics) {
-            lines = lines.concat(m.metric).concat(' ').concat(m.value.toString()).concat('\n');
+            lines = lines.concat(m.metric);
+            lines = lines.concat(' ').concat(m.value).concat('\n');
         }
         core.info("here");
         const res = yield http.post(url.concat('/api/v2/metrics/ingest'), lines);
