@@ -27,10 +27,10 @@ jobs:
             - metric: "github.metric1"
               value: "1.0"
               dimensions:
-                - project: "${{ github.repository }}"
-                - branch: "${{ github.head_ref }}"
+                project: "${{ github.repository }}"
+                branch: "${{ github.head_ref }}"
             - metric: "github.metric2"
               value: "2.0"
               dimensions:
-                - project: "${{ github.repository }}"
-                - branch: "${{ github.head_ref }}"
+                project: "${{ github.repository }}"
+                branch: "${{ github.head_ref }}"
