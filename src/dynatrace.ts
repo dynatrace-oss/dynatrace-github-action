@@ -31,7 +31,7 @@ export async function sendMetrics(
   core.info(`Sending to ${url}`)
 
   const http: httpm.HttpClient = getMetricClient(token)
-  let lines: string = "";
+  let lines = "";
 
   for (const m of metrics) {
     lines = lines.concat(m.metric).concat(' ').concat(m.value.toString()).concat('')
