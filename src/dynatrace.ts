@@ -1,4 +1,5 @@
 import * as core from '@actions/core'
+import * as httpm from '@actions/http-client'
 
 export interface Metric {
   metric: string
@@ -10,6 +11,15 @@ export interface Event {
   title: string
   text: string
   severity: string
+}
+
+function getClient(token: string): httpm.HttpClient {
+  return new httpm.HttpClient('dt-http-client', [], {
+    headers: {
+      'Authorization': 'Api-Token '.concat(token),
+      'Content-Type': 'application/json'
+    }
+  })
 }
 
 export async function sendMetrics(
