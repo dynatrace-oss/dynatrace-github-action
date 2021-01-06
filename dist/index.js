@@ -50,13 +50,12 @@ function getMetricClient(token) {
 function sendMetrics(url, token, metrics) {
     return __awaiter(this, void 0, void 0, function* () {
         core.info(`Sending ${metrics.length} metrics`);
-        core.info(`Sending to ${url}`);
         const http = getMetricClient(token);
-        var lines = "";
+        let lines = "";
         for (const m of metrics) {
-            lines = lines.concat(m.metric).concat(' ').concat(m.value.toString()).concat('');
+            lines = lines.concat(m.metric).concat(' ').concat(m.value.toString()).concat('\n');
         }
-        core.info(lines);
+        core.info("here");
         const res = yield http.post(url.concat('/api/v2/metrics/ingest'), lines);
         if (res.message.statusCode === undefined || res.message.statusCode >= 400) {
             throw new Error(`HTTP request failed: ${res.message.statusMessage}`);
