@@ -2,10 +2,12 @@ name: 'Your name here'
 description: 'Provide a description here'
 author: 'Your name or organization here'
 inputs:
-  milliseconds: # change this
+  url: 
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+    description: 'A valid Dynatrace URL'
+  token:
+    required: true
+    description: 'A valid Dynatrace API-token'
 runs:
   using: 'node12'
   main: 'dist/index.js'
