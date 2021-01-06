@@ -34,7 +34,7 @@ export async function sendMetrics(
   let lines = "";
 
   for (const m of metrics) {
-    lines = lines.concat(m.metric).concat(' ').concat(m.value.toString()).concat('')
+    lines = lines.concat(m.metric).concat(' ').concat(m.value.toString()).concat('\n')
   }
 
   core.info(lines)
