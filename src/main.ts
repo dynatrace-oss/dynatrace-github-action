@@ -5,7 +5,7 @@ async function run(): Promise<void> {
   try {
     const url: string = core.getInput('url')
     core.debug(`hello dynatrace`) 
-
+    console.log(`Hello Dynatrace`)
     
 
     
