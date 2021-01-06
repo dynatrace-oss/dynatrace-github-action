@@ -83,11 +83,21 @@ function sendEvents(url, token, events) {
     return __awaiter(this, void 0, void 0, function* () {
         core.info(`Sending ${events.length} events`);
         const http = getClient(token, 'application/json');
-        for (const m of events) {
-        }
-        const res = yield http.post(url.concat('/api/v1/events'), "");
-        if (res.message.statusCode === undefined || res.message.statusCode >= 400) {
-            throw new Error(`HTTP request failed: ${res.message.statusMessage}`);
+        for (const e of events) {
+            const event = {
+                "eventType": e.type,
+                "attachRules": {
+                    "entityIds": e.entities,
+                    "tagRule": []
+                },
+                "source": e.source,
+                "description": e.description,
+                "title": e.title
+            };
+            const res = yield http.post(url.concat('/api/v1/events'), JSON.stringify(event));
+            if (res.message.statusCode === undefined || res.message.statusCode >= 400) {
+                throw new Error(`HTTP request failed: ${res.message.statusMessage}`);
+            }
         }
     });
 }

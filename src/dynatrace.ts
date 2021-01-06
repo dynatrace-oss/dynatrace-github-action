@@ -8,6 +8,7 @@ export interface Metric {
 }
 
 export interface Event {
+  type: string
   title: string
   description: string
   source: string
@@ -79,20 +80,25 @@ export async function sendEvents(
   
   const http: httpm.HttpClient = getClient(token, 'application/json');
   
+  for (const e of events) {
+    const event = {
+      "eventType": e.type,
+      "attachRules": {
+        "entityIds": e.entities,
+        "tagRule": []
+      },
+      "source": e.source,
+      "description" : e.description,
+      "title" : e.title
+    }
 
-  for (const m of events) {
-    
+    const res: httpm.HttpClientResponse = await http.post(
+      url.concat('/api/v1/events'),
+      JSON.stringify(event)
+    );
+  
+    if (res.message.statusCode === undefined || res.message.statusCode >= 400) {
+      throw new Error(`HTTP request failed: ${res.message.statusMessage}`);
+    }  
   }
-  
-  
-
-  const res: httpm.HttpClientResponse = await http.post(
-    url.concat('/api/v1/events'),
-    ""
-  );
-
-  if (res.message.statusCode === undefined || res.message.statusCode >= 400) {
-    throw new Error(`HTTP request failed: ${res.message.statusMessage}`);
-  }
-  
 }
