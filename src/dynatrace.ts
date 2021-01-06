@@ -1,9 +1,8 @@
 
 export interface Metric {
-  type: string
-  name: string
+  metric: string
   value: number
-  dimensions: Map<string, string>
+  dimensions: string[]
 }
 
 export interface Event {
