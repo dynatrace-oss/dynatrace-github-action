@@ -23,3 +23,9 @@ jobs:
         with:
           url: 'url'
           token: 'token'
+          metrics: |
+            - metric: "metric1"
+              value: 1.0
+              dimensions:
+                - "project:${{ github.repository }}"
+                - "branch:${{ github.head_ref }}"
