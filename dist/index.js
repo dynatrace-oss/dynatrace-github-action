@@ -63,8 +63,10 @@ function sendMetrics(url, token, metrics) {
         let lines = "";
         for (const m of metrics) {
             lines = lines.concat(safeMetricKey(m.metric));
-            for (let [key, value] of m.dimensions) {
-                lines = lines.concat(',').concat(safeDimKey(key)).concat('="').concat(safeDimValue(value)).concat('"');
+            for (const [key, value] of m.dimensions) {
+                if (value && value.length > 0) {
+                    lines = lines.concat(',').concat(safeDimKey(key)).concat('="').concat(safeDimValue(value)).concat('"');
+                }
             }
             lines = lines.concat(' ').concat(m.value).concat('\n');
         }
