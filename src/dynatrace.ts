@@ -28,16 +28,16 @@ export async function sendMetrics(
   metrics: Metric[]
 ): Promise<void> {
   core.info(`Sending ${metrics.length} metrics`)
-  core.info(`Sending to ${url}`)
-
+  
   const http: httpm.HttpClient = getMetricClient(token)
   let lines = "";
 
   for (const m of metrics) {
     lines = lines.concat(m.metric).concat(' ').concat(m.value.toString()).concat('\n')
+    core.info(lines)
   }
   core.info("here")
-  core.info(lines)
+  
 
   const res: httpm.HttpClientResponse = await http.post(
     url.concat('/api/v2/metrics/ingest'),
