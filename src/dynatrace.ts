@@ -1,3 +1,4 @@
+import * as core from '@actions/core'
 
 export interface Metric {
   metric: string
@@ -11,3 +12,11 @@ export interface Event {
   severity: string
 }
 
+export async function sendMetrics(
+  url: string,
+  token: string,
+  metrics: Metric[]
+): Promise<void> {
+  core.debug(`Sending ${metrics.length} metrics`)
+  
+}
