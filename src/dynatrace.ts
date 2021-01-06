@@ -22,6 +22,18 @@ function getMetricClient(token: string): httpm.HttpClient {
   })
 }
 
+function safeMetricKey(mkey: string): string {
+  return mkey;
+}
+
+function safeDimKey(dkey: string): string {
+  return dkey;
+}
+
+function safeDimValue(val: string): string {
+  return val;
+}
+
 export async function sendMetrics(
   url: string,
   token: string,
@@ -33,10 +45,10 @@ export async function sendMetrics(
   let lines = "";
 
   for (const m of metrics) {
-    lines = lines.concat(m.metric);
-    m.dimensions.forEach((value: string, key: string) => {
-      lines = lines.concat(',').concat(key).concat('="').concat(value).concat('"');
-    });
+    lines = lines.concat(safeMetricKey(m.metric));
+    for (var [key, value] of m.dimensions) {
+      lines = lines.concat(',').concat(safeDimKey(key)).concat('="').concat(safeDimValue(value)).concat('"');
+    }
     lines = lines.concat(' ').concat(m.value).concat('\n');
   }
   core.info(lines);

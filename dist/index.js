@@ -47,16 +47,25 @@ function getMetricClient(token) {
         }
     });
 }
+function safeMetricKey(mkey) {
+    return mkey;
+}
+function safeDimKey(dkey) {
+    return dkey;
+}
+function safeDimValue(val) {
+    return val;
+}
 function sendMetrics(url, token, metrics) {
     return __awaiter(this, void 0, void 0, function* () {
         core.info(`Sending ${metrics.length} metrics`);
         const http = getMetricClient(token);
         let lines = "";
         for (const m of metrics) {
-            lines = lines.concat(m.metric);
-            m.dimensions.forEach((value, key) => {
-                lines = lines.concat(',').concat(key).concat('="').concat(value).concat('"');
-            });
+            lines = lines.concat(safeMetricKey(m.metric));
+            for (var [key, value] of m.dimensions) {
+                lines = lines.concat(',').concat(safeDimKey(key)).concat('="').concat(safeDimValue(value)).concat('"');
+            }
             lines = lines.concat(' ').concat(m.value).concat('\n');
         }
         core.info(lines);
