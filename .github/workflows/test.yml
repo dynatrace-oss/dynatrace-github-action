@@ -29,12 +29,14 @@ jobs:
               dimensions:
                 project: "${{ github.repository }}"
                 branch: "${{ github.head_ref }}"
+                event: "${{ github.event_name }}"
                 dim3: value3
                 owner: wolfgang
             - metric: "github.metric2"
               value: "2.0"
               dimensions:
                 project: "${{ github.repository }}"
-                branch: "${{ github.head_ref }}"
+                branch: "${{ github.ref }}"
+                event: "${{ github.event_name }}"
                 dim3: value3
                 owner: bob
