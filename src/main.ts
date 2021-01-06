@@ -4,7 +4,8 @@ import * as core from '@actions/core'
 async function run(): Promise<void> {
   try {
     const url: string = core.getInput('url')
-    core.debug(url) 
+    core.info(url) 
+    core.info("Hey ho lets go!") 
     
     
 
