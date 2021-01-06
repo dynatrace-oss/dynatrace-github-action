@@ -42,7 +42,7 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const url = core.getInput('url');
-            core.debug(`hello dynatrace` + url);
+            core.debug(url);
         }
         catch (error) {
             core.setFailed(error.message);

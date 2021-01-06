@@ -4,7 +4,7 @@ import * as core from '@actions/core'
 async function run(): Promise<void> {
   try {
     const url: string = core.getInput('url')
-    core.debug(`hello dynatrace` + url) 
+    core.debug(url) 
     
     
 
