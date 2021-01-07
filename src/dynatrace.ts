@@ -2,19 +2,30 @@ import * as core from '@actions/core'
 import * as httpm from '@actions/http-client'
 
 export interface Metric {
-  metric: string
-  value: string
-  dimensions: Map<string, string>
+  metric: string;
+  value: string;
+  dimensions: Map<string, string>;
 }
 
 export interface Event {
-  type: string
-  title: string
-  description: string
-  source: string
-  entities: string[]
-  tags: string[]
-  dimensions: Map<string, string>
+  type: string;
+  title: string;
+  description: string;
+  source: string;
+  entities: string[];
+  tags: string[];
+  dimensions: Map<string, string>;
+}
+
+interface TagAttachRule {
+  meTypes: string[];
+  tags: Tag[];
+}
+
+interface Tag {
+  context: string;
+  key: string;
+  value?: string;
 }
 
 function getClient(token: string, content: string): httpm.HttpClient {
@@ -84,8 +95,9 @@ export async function sendEvents(
   const http: httpm.HttpClient = getClient(token, 'application/json')
 
   for (const e of events) {
-    const tagAttachRules = []
+    const tagAttachRules : TagAttachRule[] = [];
     // extract tagging rules
+    /*
     if(e.hasOwnProperty('tags')) {
       for (const t of e.tags) {
         const arr = t.split(':')
@@ -114,6 +126,7 @@ export async function sendEvents(
         }
       }
     }
+    */
     // create Dynatrace event structure
     const event = {
       eventType: e.type,
