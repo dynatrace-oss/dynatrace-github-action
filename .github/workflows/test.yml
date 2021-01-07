@@ -44,6 +44,7 @@ jobs:
               description: "description text"
               source: GitHub
               tags:
+                - MOBILE_APPLICATION:AppTeam
               entities:
                 - MOBILE_APPLICATION-C061BED4799B41C5
               dimensions:
