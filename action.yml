@@ -1,4 +1,4 @@
-name: 'Dynatrace'
+name: 'Dynatrace-Action'
 description: 'Action that sends metrics and events to a Dynatrace monitoring environment from a GitHub workflow'
 author: 'Wolfgang Beer'
 inputs:
