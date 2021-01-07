@@ -86,7 +86,7 @@ export async function sendEvents(
   for (const e of events) {
     const tagAttachRules = []
     // extract tagging rules
-    if(e.tags) {
+    if(e.hasOwnProperty('tags')) {
       for (const t of e.tags) {
         const arr = t.split(':')
         if (arr.length === 2) {
