@@ -83,21 +83,12 @@ function sendEvents(url, token, events) {
         core.info(`Sending ${events.length} events`);
         const http = getClient(token, 'application/json');
         for (const e of events) {
-            const event = {
-                "eventType": e.type,
-                "attachRules": {
-                    "entityIds": e.entities,
-                    "tagRule": Array(),
-                },
-                "source": e.source,
-                "description": e.description,
-                "title": e.title
-            };
+            const tagAttachRules = [];
             // extract tagging rules
             for (const t of e.tags) {
                 const arr = t.split(":");
-                if (arr.length == 2) {
-                    event.attachRules.tagRule.push({
+                if (arr.length === 2) {
+                    tagAttachRules.push({
                         "meTypes": [arr[0]],
                         "tags": [
                             {
@@ -107,9 +98,9 @@ function sendEvents(url, token, events) {
                         ]
                     });
                 }
-                else if (arr.length == 3) {
+                else if (arr.length === 3) {
                     // tag with key and value 
-                    event.attachRules.tagRule.push({
+                    tagAttachRules.push({
                         "meTypes": [arr[0]],
                         "tags": [
                             {
@@ -121,6 +112,26 @@ function sendEvents(url, token, events) {
                     });
                 }
             }
+            // extract dimension properties
+            /*
+            for (const [key, value] of Object.entries(e.dimensions)) {
+              if(value && value.length > 0) {
+                
+              }
+            }
+            */
+            // create Dynatrace event structure
+            const event = {
+                "eventType": e.type,
+                "attachRules": {
+                    "entityIds": e.entities,
+                    "tagRule": tagAttachRules,
+                },
+                "source": e.source,
+                "description": e.description,
+                "title": e.title,
+                "customProperties": e.dimensions
+            };
             core.info(JSON.stringify(event));
             const res = yield http.post(url.concat('/api/v1/events'), JSON.stringify(event));
             if (res.message.statusCode === undefined || res.message.statusCode >= 400) {
