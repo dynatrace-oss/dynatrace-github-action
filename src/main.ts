@@ -8,13 +8,13 @@ async function run(): Promise<void> {
     const token: string = core.getInput('token');
 
     const mStr = core.getInput('metrics');
-    if(mStr !== '[]') {
+    if(mStr.length > 5) {
       const metrics = yaml.load(mStr) as d.Metric[];
       d.sendMetrics(url, token, metrics);
     }
     
     const eStr = core.getInput('events');
-    if(eStr !== '[]') {
+    if(eStr.length > 5) {
       const events = yaml.load(eStr) as d.Event[];
       d.sendEvents(url, token, events);
     }
