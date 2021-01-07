@@ -4,7 +4,7 @@ import * as httpm from '@actions/http-client'
 export interface Metric {
   metric: string;
   value: string;
-  dimensions: Map<string, string>;
+  dimensions?: Map<string, string>;
 }
 
 export interface Event {
@@ -12,9 +12,9 @@ export interface Event {
   title: string;
   description: string;
   source: string;
-  entities: string[];
-  tags: string[];
-  dimensions: Map<string, string>;
+  entities?: string[];
+  tags?: string[];
+  dimensions?: Map<string, string>;
 }
 
 interface TagAttachRule {
@@ -97,7 +97,6 @@ export async function sendEvents(
   for (const e of events) {
     const tagAttachRules : TagAttachRule[] = [];
     // extract tagging rules
-    /*
     if(e.hasOwnProperty('tags')) {
       for (const t of e.tags) {
         const arr = t.split(':')
@@ -126,7 +125,6 @@ export async function sendEvents(
         }
       }
     }
-    */
     // create Dynatrace event structure
     const event = {
       eventType: e.type,
