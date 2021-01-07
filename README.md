@@ -29,7 +29,7 @@ To send a metric, configure a job step like the following:
 ```
 
 Analyze the resulting CI/CD pipeline metric within Dynatrace, as shown below:
-![chart](./chart.png)
+![chart](./metric.png)
 
 You can also send Dynatrace events from workflows, same as `metric` please note
 how `events` is configured as a string containing YAML code.
