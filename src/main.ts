@@ -4,16 +4,22 @@ import * as yaml from 'js-yaml'
 
 async function run(): Promise<void> {
   try {
-    const url: string = core.getInput('url')
-    const token: string = core.getInput('token')
+    const url: string = core.getInput('url');
+    const token: string = core.getInput('token');
 
-    const metrics = yaml.load(core.getInput('metrics')) as d.Metric[]
-    d.sendMetrics(url, token, metrics)
-
-    const events = yaml.load(core.getInput('events')) as d.Event[]
-    d.sendEvents(url, token, events)
+    const mStr = core.getInput('metrics');
+    if(mStr !== '[]') {
+      const metrics = yaml.load(mStr) as d.Metric[];
+      d.sendMetrics(url, token, metrics);
+    }
+    
+    const eStr = core.getInput('events');
+    if(eStr !== '[]') {
+      const events = yaml.load(eStr) as d.Event[];
+      d.sendEvents(url, token, events);
+    }
   } catch (error) {
-    core.setFailed(error.message)
+    core.setFailed(error.message);
   }
 }
 
