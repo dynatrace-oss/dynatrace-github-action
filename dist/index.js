@@ -188,10 +188,20 @@ function run() {
         try {
             const url = core.getInput('url');
             const token = core.getInput('token');
-            const metrics = yaml.load(core.getInput('metrics'));
-            d.sendMetrics(url, token, metrics);
-            const events = yaml.load(core.getInput('events'));
-            d.sendEvents(url, token, events);
+            const mStr = core.getInput('metrics');
+            core.info(mStr);
+            /*
+            if(mStr.length > 5) {
+              const metrics = yaml.load(mStr) as d.Metric[];
+              d.sendMetrics(url, token, metrics);
+            }
+            */
+            const eStr = core.getInput('events');
+            core.info(eStr);
+            if (eStr.length > 5) {
+                const events = yaml.load(eStr);
+                d.sendEvents(url, token, events);
+            }
         }
         catch (error) {
             core.setFailed(error.message);
