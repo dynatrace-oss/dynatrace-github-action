@@ -86,40 +86,34 @@ export async function sendEvents(
   for (const e of events) {
     const tagAttachRules = []
     // extract tagging rules
-    for (const t of e.tags) {
-      const arr = t.split(':')
-      if (arr.length === 2) {
-        tagAttachRules.push({
-          meTypes: [arr[0]],
-          tags: [
-            {
-              context: 'CONTEXTLESS',
-              key: arr[1]
-            }
-          ]
-        })
-      } else if (arr.length === 3) {
-        // tag with key and value
-        tagAttachRules.push({
-          meTypes: [arr[0]],
-          tags: [
-            {
-              context: 'CONTEXTLESS',
-              key: arr[1],
-              value: arr[2]
-            }
-          ]
-        })
+    if(e.tags) {
+      for (const t of e.tags) {
+        const arr = t.split(':')
+        if (arr.length === 2) {
+          tagAttachRules.push({
+            meTypes: [arr[0]],
+            tags: [
+              {
+                context: 'CONTEXTLESS',
+                key: arr[1]
+              }
+            ]
+          })
+        } else if (arr.length === 3) {
+          // tag with key and value
+          tagAttachRules.push({
+            meTypes: [arr[0]],
+            tags: [
+              {
+                context: 'CONTEXTLESS',
+                key: arr[1],
+                value: arr[2]
+              }
+            ]
+          })
+        }
       }
     }
-    // extract dimension properties
-    /*
-    for (const [key, value] of Object.entries(e.dimensions)) {
-      if(value && value.length > 0) {
-        
-      } 
-    }
-    */
     // create Dynatrace event structure
     const event = {
       eventType: e.type,

@@ -45,8 +45,6 @@ jobs:
               source: GitHub
               entities:
                 - MOBILE_APPLICATION-C061BED4799B41C5
-              tags:
-                - MOBILE_APPLICATION:AppTeam
               dimensions:
                 project: "${{ github.repository }}"
                 branch: "${{ github.ref }}"
