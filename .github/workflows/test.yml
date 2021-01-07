@@ -41,7 +41,7 @@ jobs:
                 owner: bob
           events: |
             - title: "event1"
-              type: AVAILABILITY_EVENT    
+              type: CUSTOM_INFO    
               description: "description text"
               source: GitHub
               entities:
@@ -70,7 +70,7 @@ jobs:
           token: '${{ secrets.DT_TOKEN }}'
           events: |
             - title: "event1"
-              type: AVAILABILITY_EVENT    
+              type: CUSTOM_INFO    
               description: "description text"
               source: GitHub
               entities:
