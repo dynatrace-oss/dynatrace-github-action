@@ -9,10 +9,12 @@ async function run(): Promise<void> {
 
     const mStr = core.getInput('metrics');
     core.info(mStr)
+    /*
     if(mStr.length > 5) {
       const metrics = yaml.load(mStr) as d.Metric[];
       d.sendMetrics(url, token, metrics);
     }
+    */
     
     const eStr = core.getInput('events');
     core.info(eStr)
