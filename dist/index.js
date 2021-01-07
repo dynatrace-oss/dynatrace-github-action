@@ -190,12 +190,10 @@ function run() {
             const token = core.getInput('token');
             const mStr = core.getInput('metrics');
             core.info(mStr);
-            /*
-            if(mStr.length > 5) {
-              const metrics = yaml.load(mStr) as d.Metric[];
-              d.sendMetrics(url, token, metrics);
+            if (mStr.length > 5) {
+                const metrics = yaml.load(mStr);
+                d.sendMetrics(url, token, metrics);
             }
-            */
             const eStr = core.getInput('events');
             core.info(eStr);
             if (eStr.length > 5) {
