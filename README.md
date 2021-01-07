@@ -28,6 +28,9 @@ To send a metric, configure a job step like the following:
         owner: wolfgang
 ```
 
+Analyze the resulting CI/CD pipeline metric within Dynatrace, as shown below:
+![chart](./chart.png)
+
 You can also send Dynatrace events from workflows, same as `metric` please note
 how `events` is configured as a string containing YAML code.
 For example, to send an event whenever a job has failed:
@@ -58,6 +61,9 @@ steps:
                 event: "${{ github.event_name }}"
                 owner: ${{ github.repository_owner }}
 ```
+
+Find the resulting CI/CD pipeline events within Dynatrace, as shown below:
+![events](./event.png)
 
 ## Development
 
