@@ -14,7 +14,7 @@ To send a metric, configure a job step like the following:
 
 ```yaml
 - name: Build count
-  uses: wolfgangB33r/dynatrace-action@v3
+  uses: wolfgangB33r/dynatrace-action@v4
   with:
     url: '${{ secrets.DT_URL }}'
     token: '${{ secrets.DT_TOKEN }}'
@@ -33,6 +33,10 @@ Analyze the resulting CI/CD pipeline metric within Dynatrace, as shown below:
 
 You can also send Dynatrace events from workflows, same as `metric` please note
 how `events` is configured as a string containing YAML code.
+To push an event onto an entity, either a list of entity ids is necessary or 
+one or more tag query statements. A tag query statement always contains the type of
+the entity to search for (HOST) followed by a ':', a tag key and optionally followed by 
+':' and a tag value.  
 For example, to send an event whenever a job has failed:
 
 ```yaml
@@ -43,7 +47,7 @@ steps:
     run: this-will-fail
   - name: Notify Dynatrace on Build Failed
     if: failure()
-    uses: wolfgangB33r/dynatrace-action@v3
+    uses: wolfgangB33r/dynatrace-action@v4
     with:
       url: '${{ secrets.DT_URL }}'
       token: '${{ secrets.DT_TOKEN }}'
@@ -55,11 +59,14 @@ steps:
           tags:
             - SERVICE:MyApp
             - HOST:MyApp:value
-              dimensions:
-                project: "${{ github.repository }}"
-                branch: "${{ github.ref }}"
-                event: "${{ github.event_name }}"
-                owner: ${{ github.repository_owner }}
+          entities:
+            - HOST-12345678
+            - SERVICE-123212231
+          dimensions:
+            project: "${{ github.repository }}"
+            branch: "${{ github.ref }}"
+            event: "${{ github.event_name }}"
+            owner: ${{ github.repository_owner }}
 ```
 
 Find the resulting CI/CD pipeline events within Dynatrace, as shown below:
