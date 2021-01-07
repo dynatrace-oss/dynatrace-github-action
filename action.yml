@@ -1,6 +1,6 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Dynatrace'
+description: 'Action that sends metrics and events to a Dynatrace monitoring environment from a GitHub workflow'
+author: 'Wolfgang Beer'
 inputs:
   url: 
     required: true
@@ -17,3 +17,6 @@ inputs:
 runs:
   using: 'node12'
   main: 'dist/index.js'
+branding:
+  icon: 'bar-chart-2'
+  color: 'black'
