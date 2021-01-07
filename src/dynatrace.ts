@@ -108,6 +108,12 @@ export async function sendEvents(
         });
       }
     }
+    // extract dimension properties
+    for (const [key, value] of Object.entries(e.dimensions)) {
+      if(value && value.length > 0) {
+        lines = lines.concat(',').concat(safeDimKey(key)).concat('="').concat(safeDimValue(value)).concat('"');
+      } 
+    }
     // create Dynatrace event structure
     const event = {
       "eventType": e.type,

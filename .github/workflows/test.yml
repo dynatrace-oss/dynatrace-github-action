@@ -46,8 +46,7 @@ jobs:
               entities:
                 - MOBILE_APPLICATION-C061BED4799B41C5
               tags:
-                - APPLICATION:github
-                - SERVICE:github:value
+                - MOBILE_APPLICATION:AppTeam
               dimensions:
                 project: "${{ github.repository }}"
                 branch: "${{ github.ref }}"
@@ -57,11 +56,9 @@ jobs:
               type: CUSTOM_INFO
               description: "description text"
               source: GitHub
-              entities:
-                - MOBILE_APPLICATION-C061BED4799B41C5
               tags:
-                - HOST:key:value
-                - SERVICE:key
+                - MOBILE_APPLICATION:AppTeam
+                - MOBILE_APPLICATION:AppTeam:value
               dimensions:
                 project: "${{ github.repository }}"
                 branch: "${{ github.ref }}"
