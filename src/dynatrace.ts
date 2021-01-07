@@ -61,16 +61,19 @@ export async function sendMetrics(
 
   for (const m of metrics) {
     lines = lines.concat(safeMetricKey(m.metric))
-    for (const [key, value] of Object.entries(m.dimensions)) {
-      if (value && value.length > 0) {
-        lines = lines
-          .concat(',')
-          .concat(safeDimKey(key))
-          .concat('="')
-          .concat(safeDimValue(value))
-          .concat('"')
+    if(m.dimensions) {
+      for (const [key, value] of Object.entries(m.dimensions)) {
+        if (value && value.length > 0) {
+          lines = lines
+            .concat(',')
+            .concat(safeDimKey(key))
+            .concat('="')
+            .concat(safeDimValue(value))
+            .concat('"')
+        }
       }
     }
+    
     lines = lines.concat(' ').concat(m.value).concat('\n')
   }
   core.info(lines)
@@ -97,7 +100,7 @@ export async function sendEvents(
   for (const e of events) {
     const tagAttachRules : TagAttachRule[] = [];
     // extract tagging rules
-    if(e.hasOwnProperty('tags')) {
+    if(e.tags) {
       for (const t of e.tags) {
         const arr = t.split(':')
         if (arr.length === 2) {

@@ -42,7 +42,7 @@ const httpm = __importStar(__webpack_require__(925));
 function getClient(token, content) {
     return new httpm.HttpClient('dt-http-client', [], {
         headers: {
-            'Authorization': 'Api-Token '.concat(token),
+            Authorization: 'Api-Token '.concat(token),
             'Content-Type': content
         }
     });
@@ -60,12 +60,19 @@ function sendMetrics(url, token, metrics) {
     return __awaiter(this, void 0, void 0, function* () {
         core.info(`Sending ${metrics.length} metrics`);
         const http = getClient(token, 'text/plain');
-        let lines = "";
+        let lines = '';
         for (const m of metrics) {
             lines = lines.concat(safeMetricKey(m.metric));
-            for (const [key, value] of Object.entries(m.dimensions)) {
-                if (value && value.length > 0) {
-                    lines = lines.concat(',').concat(safeDimKey(key)).concat('="').concat(safeDimValue(value)).concat('"');
+            if (m.dimensions) {
+                for (const [key, value] of Object.entries(m.dimensions)) {
+                    if (value && value.length > 0) {
+                        lines = lines
+                            .concat(',')
+                            .concat(safeDimKey(key))
+                            .concat('="')
+                            .concat(safeDimValue(value))
+                            .concat('"');
+                    }
                 }
             }
             lines = lines.concat(' ').concat(m.value).concat('\n');
@@ -85,52 +92,46 @@ function sendEvents(url, token, events) {
         for (const e of events) {
             const tagAttachRules = [];
             // extract tagging rules
-            for (const t of e.tags) {
-                const arr = t.split(":");
-                if (arr.length === 2) {
-                    tagAttachRules.push({
-                        "meTypes": [arr[0]],
-                        "tags": [
-                            {
-                                "context": "CONTEXTLESS",
-                                "key": arr[1]
-                            }
-                        ]
-                    });
-                }
-                else if (arr.length === 3) {
-                    // tag with key and value 
-                    tagAttachRules.push({
-                        "meTypes": [arr[0]],
-                        "tags": [
-                            {
-                                "context": "CONTEXTLESS",
-                                "key": arr[1],
-                                "value": arr[2]
-                            }
-                        ]
-                    });
+            if (e.tags) {
+                for (const t of e.tags) {
+                    const arr = t.split(':');
+                    if (arr.length === 2) {
+                        tagAttachRules.push({
+                            meTypes: [arr[0]],
+                            tags: [
+                                {
+                                    context: 'CONTEXTLESS',
+                                    key: arr[1]
+                                }
+                            ]
+                        });
+                    }
+                    else if (arr.length === 3) {
+                        // tag with key and value
+                        tagAttachRules.push({
+                            meTypes: [arr[0]],
+                            tags: [
+                                {
+                                    context: 'CONTEXTLESS',
+                                    key: arr[1],
+                                    value: arr[2]
+                                }
+                            ]
+                        });
+                    }
                 }
             }
-            // extract dimension properties
-            /*
-            for (const [key, value] of Object.entries(e.dimensions)) {
-              if(value && value.length > 0) {
-                
-              }
-            }
-            */
             // create Dynatrace event structure
             const event = {
-                "eventType": e.type,
-                "attachRules": {
-                    "entityIds": e.entities,
-                    "tagRule": tagAttachRules,
+                eventType: e.type,
+                attachRules: {
+                    entityIds: e.entities,
+                    tagRule: tagAttachRules
                 },
-                "source": e.source,
-                "description": e.description,
-                "title": e.title,
-                "customProperties": e.dimensions
+                source: e.source,
+                description: e.description,
+                title: e.title,
+                customProperties: e.dimensions
             };
             core.info(JSON.stringify(event));
             const res = yield http.post(url.concat('/api/v1/events'), JSON.stringify(event));
