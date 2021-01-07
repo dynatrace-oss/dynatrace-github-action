@@ -43,6 +43,7 @@ jobs:
               type: AVAILABILITY_EVENT    
               description: "description text"
               source: GitHub
+              tags:
               entities:
                 - MOBILE_APPLICATION-C061BED4799B41C5
               dimensions:
