@@ -19,6 +19,64 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: ./
+      - name: Run Dynatrace action with multiple metrics and multiple events
+        uses: ./
         with:
-          milliseconds: 1000
+          url: '${{ secrets.DT_URL }}'
+          token: '${{ secrets.DT_TOKEN }}'
+          metrics: |
+            - metric: "github.metric1"
+              value: "1.0"
+              dimensions:
+                project: "${{ github.repository }}"
+                branch: "${{ github.ref }}"
+                event: "${{ github.event_name }}"
+                owner: wolfgang
+            - metric: "github.metric2"
+              value: "2.0"
+              dimensions:
+                project: "${{ github.repository }}"
+                branch: "${{ github.ref }}"
+                event: "${{ github.event_name }}"
+                owner: bob
+          events: |
+            - title: "event1"
+              type: CUSTOM_INFO    
+              description: "description text"
+              source: GitHub
+              entities:
+                - MOBILE_APPLICATION-C061BED4799B41C5
+              dimensions:
+                project: "${{ github.repository }}"
+                branch: "${{ github.ref }}"
+                event: "${{ github.event_name }}"
+                owner: wolfgang
+            - title: "event2"
+              type: CUSTOM_INFO
+              description: "description text"
+              source: GitHub
+              tags:
+                - MOBILE_APPLICATION:AppTeam
+                - MOBILE_APPLICATION:AppTeam:value
+              dimensions:
+                project: "${{ github.repository }}"
+                branch: "${{ github.ref }}"
+                event: "${{ github.event_name }}"
+                owner: bob
+      - name: Run Dynatrace action without a metric
+        uses: ./
+        with:
+          url: '${{ secrets.DT_URL }}'
+          token: '${{ secrets.DT_TOKEN }}'
+          events: |
+            - title: "event1"
+              type: CUSTOM_INFO    
+              description: "description text"
+              source: GitHub
+              entities:
+                - MOBILE_APPLICATION-C061BED4799B41C5
+              dimensions:
+                project: "${{ github.repository }}"
+                branch: "${{ github.ref }}"
+                event: "${{ github.event_name }}"
+                owner: wolfgang

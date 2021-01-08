@@ -1,18 +1,27 @@
 import * as core from '@actions/core'
-import {wait} from './wait'
+import * as d from './dynatrace'
+import * as yaml from 'js-yaml'
 
 async function run(): Promise<void> {
   try {
-    const ms: string = core.getInput('milliseconds')
-    core.debug(`Waiting ${ms} milliseconds ...`) // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
+    const url: string = core.getInput('url');
+    const token: string = core.getInput('token');
 
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
-
-    core.setOutput('time', new Date().toTimeString())
+    const mStr = core.getInput('metrics');
+    core.info(mStr)
+    if(mStr.length > 5) {
+      const metrics = yaml.load(mStr) as d.Metric[];
+      d.sendMetrics(url, token, metrics);
+    }
+    
+    const eStr = core.getInput('events');
+    core.info(eStr)
+    if(eStr.length > 5) {
+      const events = yaml.load(eStr) as d.Event[];
+      d.sendEvents(url, token, events);
+    }
   } catch (error) {
-    core.setFailed(error.message)
+    core.setFailed(error.message);
   }
 }
 

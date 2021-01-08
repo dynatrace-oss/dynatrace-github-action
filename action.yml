@@ -1,11 +1,22 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'DynatraceAction'
+description: 'Action that sends metrics and events to a Dynatrace monitoring environment from a GitHub workflow'
+author: 'Wolfgang Beer'
 inputs:
-  milliseconds: # change this
+  url: 
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+    description: 'A valid Dynatrace URL'
+  token:
+    required: true
+    description: 'A valid Dynatrace API-token'
+  metrics:
+    description: 'A list of metrics objects to send'
+    default: '[]'
+  events:
+    description: 'A list of event objects to send'
+    default: '[]'
 runs:
   using: 'node12'
   main: 'dist/index.js'
+branding:
+  icon: 'bar-chart-2'
+  color: 'black'
