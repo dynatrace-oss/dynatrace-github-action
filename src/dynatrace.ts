@@ -38,11 +38,11 @@ function getClient(token: string, content: string): httpm.HttpClient {
 }
 
 function safeMetricKey(mkey: string): string {
-  return mkey.toLowerCase().replace(/[^\.0-9a-z_-]/gi, '_')
+  return mkey.toLowerCase().replace(/[^.0-9a-z_-]/gi, '_')
 }
 
 function safeDimKey(dkey: string): string {
-  return dkey.toLowerCase().replace(/[^\.0-9a-z_-]/gi, '_')
+  return dkey.toLowerCase().replace(/[^.0-9a-z_-]/gi, '_')
 }
 
 function safeDimValue(val: string): string {

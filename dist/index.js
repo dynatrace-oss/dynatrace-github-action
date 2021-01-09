@@ -48,10 +48,10 @@ function getClient(token, content) {
     });
 }
 function safeMetricKey(mkey) {
-    return mkey.toLowerCase().replace(/[^\.0-9a-z_-]/gi, '_');
+    return mkey.toLowerCase().replace(/[^.0-9a-z_-]/gi, '_');
 }
 function safeDimKey(dkey) {
-    return dkey.toLowerCase().replace(/[^\.0-9a-z_-]/gi, '_');
+    return dkey.toLowerCase().replace(/[^.0-9a-z_-]/gi, '_');
 }
 function safeDimValue(val) {
     return val;
