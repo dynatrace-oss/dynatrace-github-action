@@ -19,30 +19,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Run Dynatrace action with multiple metrics and multiple events
+      - name: Inform Dynatrace about a successful build (metric + event)
+        if: ${{ success() }}
         uses: ./
         with:
           url: '${{ secrets.DT_URL }}'
           token: '${{ secrets.DT_TOKEN }}'
           metrics: |
-            - metric: "github.metric1"
+            - metric: "github.build.total"
               value: "1.0"
               dimensions:
                 project: "${{ github.repository }}"
                 branch: "${{ github.ref }}"
                 event: "${{ github.event_name }}"
                 owner: wolfgang
-            - metric: "github.metric2"
-              value: "2.0"
+            - metric: "github.build.success"
+              value: "1.0"
               dimensions:
                 project: "${{ github.repository }}"
                 branch: "${{ github.ref }}"
                 event: "${{ github.event_name }}"
-                owner: bob
+                owner: wolfgang
           events: |
-            - title: "event1"
+            - title: "Successful Build"
               type: CUSTOM_INFO    
-              description: "description text"
+              description: "GitHub project ${{ github.repository }} was successfully built"
               source: GitHub
               entities:
                 - MOBILE_APPLICATION-C061BED4799B41C5
@@ -51,27 +52,31 @@ jobs:
                 branch: "${{ github.ref }}"
                 event: "${{ github.event_name }}"
                 owner: wolfgang
-            - title: "event2"
-              type: CUSTOM_INFO
-              description: "description text"
-              source: GitHub
-              tags:
-                - MOBILE_APPLICATION:AppTeam
-                - MOBILE_APPLICATION:AppTeam:value
-              dimensions:
-                project: "${{ github.repository }}"
-                branch: "${{ github.ref }}"
-                event: "${{ github.event_name }}"
-                owner: bob
-      - name: Run Dynatrace action without a metric
+      - name: Inform Dynatrace about a failed build (metric + event)
+        if: ${{ failure() }}
         uses: ./
         with:
           url: '${{ secrets.DT_URL }}'
           token: '${{ secrets.DT_TOKEN }}'
+          metrics: |
+            - metric: "github.build.total"
+              value: "1.0"
+              dimensions:
+                project: "${{ github.repository }}"
+                branch: "${{ github.ref }}"
+                event: "${{ github.event_name }}"
+                owner: wolfgang
+            - metric: "github.build.fails"
+              value: "1.0"
+              dimensions:
+                project: "${{ github.repository }}"
+                branch: "${{ github.ref }}"
+                event: "${{ github.event_name }}"
+                owner: wolfgang
           events: |
-            - title: "event1"
+            - title: "Failed build"
               type: CUSTOM_INFO    
-              description: "description text"
+              description: "GitHub project ${{ github.repository }} build failed!"
               source: GitHub
               entities:
                 - MOBILE_APPLICATION-C061BED4799B41C5
