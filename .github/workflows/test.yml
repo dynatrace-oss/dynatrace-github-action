@@ -15,10 +15,6 @@ jobs:
           npm install
       - run: |
           npm run all
-  test: # make sure the action works on a clean machine without building
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
       - name: Inform Dynatrace about a successful build (metric + event)
         if: ${{ success() }}
         uses: ./
@@ -52,21 +48,59 @@ jobs:
                 branch: "${{ github.ref }}"
                 event: "${{ github.event_name }}"
                 owner: wolfgang
-      - name: Inform Dynatrace about a failed build (metric + event)
-        if: ${{ failure() }}
+        - name: Inform Dynatrace about a failed build (metric + event)
+          if: ${{ failure() }}
+          uses: ./
+          with:
+            url: '${{ secrets.DT_URL }}'
+            token: '${{ secrets.DT_TOKEN }}'
+            metrics: |
+              - metric: "github.build.total"
+                value: "1.0"
+                dimensions:
+                  project: "${{ github.repository }}"
+                  branch: "${{ github.ref }}"
+                  event: "${{ github.event_name }}"
+                  owner: wolfgang
+              - metric: "github.build.fails"
+                value: "1.0"
+                dimensions:
+                  project: "${{ github.repository }}"
+                  branch: "${{ github.ref }}"
+                  event: "${{ github.event_name }}"
+                  owner: wolfgang
+            events: |
+              - title: "Failed build"
+                type: CUSTOM_INFO    
+                description: "GitHub project ${{ github.repository }} build failed!"
+                source: GitHub
+                entities:
+                  - MOBILE_APPLICATION-C061BED4799B41C5
+                dimensions:
+                  project: "${{ github.repository }}"
+                  branch: "${{ github.ref }}"
+                  event: "${{ github.event_name }}"
+                  owner: wolfgang
+
+  test: # make sure the action works on a clean machine without building
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Inform Dynatrace about a successful test (metric + event)
+        if: ${{ success() }}
         uses: ./
         with:
           url: '${{ secrets.DT_URL }}'
           token: '${{ secrets.DT_TOKEN }}'
           metrics: |
-            - metric: "github.build.total"
+            - metric: "github.metric1"
               value: "1.0"
               dimensions:
                 project: "${{ github.repository }}"
                 branch: "${{ github.ref }}"
                 event: "${{ github.event_name }}"
                 owner: wolfgang
-            - metric: "github.build.fails"
+            - metric: "github.metric2"
               value: "1.0"
               dimensions:
                 project: "${{ github.repository }}"
@@ -74,9 +108,42 @@ jobs:
                 event: "${{ github.event_name }}"
                 owner: wolfgang
           events: |
-            - title: "Failed build"
+            - title: "Successful Test"
               type: CUSTOM_INFO    
-              description: "GitHub project ${{ github.repository }} build failed!"
+              description: "GitHub project ${{ github.repository }} was successfully tested"
+              source: GitHub
+              entities:
+                - MOBILE_APPLICATION-C061BED4799B41C5
+              dimensions:
+                project: "${{ github.repository }}"
+                branch: "${{ github.ref }}"
+                event: "${{ github.event_name }}"
+                owner: wolfgang
+      - name: Inform Dynatrace about a failed test (metric + event)
+        if: ${{ failure() }}
+        uses: ./
+        with:
+          url: '${{ secrets.DT_URL }}'
+          token: '${{ secrets.DT_TOKEN }}'
+          metrics: |
+            - metric: "github.metric3"
+              value: "1.0"
+              dimensions:
+                project: "${{ github.repository }}"
+                branch: "${{ github.ref }}"
+                event: "${{ github.event_name }}"
+                owner: wolfgang
+            - metric: "github.metric4"
+              value: "1.0"
+              dimensions:
+                project: "${{ github.repository }}"
+                branch: "${{ github.ref }}"
+                event: "${{ github.event_name }}"
+                owner: wolfgang
+          events: |
+            - title: "Failed test"
+              type: CUSTOM_INFO    
+              description: "GitHub project ${{ github.repository }} test failed!"
               source: GitHub
               entities:
                 - MOBILE_APPLICATION-C061BED4799B41C5
