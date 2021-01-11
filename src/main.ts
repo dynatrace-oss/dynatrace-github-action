@@ -2,7 +2,7 @@ import * as core from '@actions/core'
 import * as d from './dynatrace'
 import * as yaml from 'js-yaml'
 
-async function run(): Promise<void> {
+export async function run(): Promise<void> {
   try {
     const url: string = core.getInput('url');
     const token: string = core.getInput('token');

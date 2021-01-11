@@ -37,15 +37,15 @@ function getClient(token: string, content: string): httpm.HttpClient {
   })
 }
 
-function safeMetricKey(mkey: string): string {
+export function safeMetricKey(mkey: string): string {
   return mkey.toLowerCase().replace(/[^.0-9a-z_-]/gi, '_')
 }
 
-function safeDimKey(dkey: string): string {
+export function safeDimKey(dkey: string): string {
   return dkey.toLowerCase().replace(/[^.0-9a-z_-]/gi, '_')
 }
 
-function safeDimValue(val: string): string {
+export function safeDimValue(val: string): string {
   return val
 }
 

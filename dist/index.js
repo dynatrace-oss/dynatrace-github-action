@@ -36,7 +36,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.sendEvents = exports.sendMetrics = void 0;
+exports.sendEvents = exports.sendMetrics = exports.safeDimValue = exports.safeDimKey = exports.safeMetricKey = void 0;
 const core = __importStar(__nccwpck_require__(186));
 const httpm = __importStar(__nccwpck_require__(925));
 function getClient(token, content) {
@@ -50,12 +50,15 @@ function getClient(token, content) {
 function safeMetricKey(mkey) {
     return mkey.toLowerCase().replace(/[^.0-9a-z_-]/gi, '_');
 }
+exports.safeMetricKey = safeMetricKey;
 function safeDimKey(dkey) {
     return dkey.toLowerCase().replace(/[^.0-9a-z_-]/gi, '_');
 }
+exports.safeDimKey = safeDimKey;
 function safeDimValue(val) {
     return val;
 }
+exports.safeDimValue = safeDimValue;
 function sendMetrics(url, token, metrics) {
     return __awaiter(this, void 0, void 0, function* () {
         core.info(`Sending ${metrics.length} metrics`);
@@ -180,6 +183,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.run = void 0;
 const core = __importStar(__nccwpck_require__(186));
 const d = __importStar(__nccwpck_require__(341));
 const yaml = __importStar(__nccwpck_require__(917));
@@ -206,6 +210,7 @@ function run() {
         }
     });
 }
+exports.run = run;
 run();
 
 
