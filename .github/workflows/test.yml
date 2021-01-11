@@ -48,39 +48,39 @@ jobs:
                 branch: "${{ github.ref }}"
                 event: "${{ github.event_name }}"
                 owner: wolfgang
-        - name: Inform Dynatrace about a failed build (metric + event)
-          if: ${{ failure() }}
-          uses: ./
-          with:
-            url: '${{ secrets.DT_URL }}'
-            token: '${{ secrets.DT_TOKEN }}'
-            metrics: |
-              - metric: "github.build.total"
-                value: "1.0"
-                dimensions:
-                  project: "${{ github.repository }}"
-                  branch: "${{ github.ref }}"
-                  event: "${{ github.event_name }}"
-                  owner: wolfgang
-              - metric: "github.build.fails"
-                value: "1.0"
-                dimensions:
-                  project: "${{ github.repository }}"
-                  branch: "${{ github.ref }}"
-                  event: "${{ github.event_name }}"
-                  owner: wolfgang
-            events: |
-              - title: "Failed build"
-                type: CUSTOM_INFO    
-                description: "GitHub project ${{ github.repository }} build failed!"
-                source: GitHub
-                entities:
-                  - MOBILE_APPLICATION-C061BED4799B41C5
-                dimensions:
-                  project: "${{ github.repository }}"
-                  branch: "${{ github.ref }}"
-                  event: "${{ github.event_name }}"
-                  owner: wolfgang
+      - name: Inform Dynatrace about a failed build (metric + event)
+        if: ${{ failure() }}
+        uses: ./
+        with:
+          url: '${{ secrets.DT_URL }}'
+          token: '${{ secrets.DT_TOKEN }}'
+          metrics: |
+            - metric: "github.build.total"
+              value: "1.0"
+              dimensions:
+                project: "${{ github.repository }}"
+                branch: "${{ github.ref }}"
+                event: "${{ github.event_name }}"
+                owner: wolfgang
+            - metric: "github.build.fails"
+              value: "1.0"
+              dimensions:
+                project: "${{ github.repository }}"
+                branch: "${{ github.ref }}"
+                event: "${{ github.event_name }}"
+                owner: wolfgang
+          events: |
+            - title: "Failed build"
+              type: CUSTOM_INFO    
+              description: "GitHub project ${{ github.repository }} build failed!"
+              source: GitHub
+              entities:
+                - MOBILE_APPLICATION-C061BED4799B41C5
+              dimensions:
+                project: "${{ github.repository }}"
+                branch: "${{ github.ref }}"
+                event: "${{ github.event_name }}"
+                owner: wolfgang
 
   test: # make sure the action works on a clean machine without building
     runs-on: ubuntu-latest
