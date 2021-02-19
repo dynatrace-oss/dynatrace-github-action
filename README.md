@@ -6,7 +6,7 @@ This Action lets you send events and metrics to a Dynatrace monitoring environme
 
 ## Usage
 
-The action can send metrics and events to any Dynatrace environment by setting the `url` and `url` param.
+The action can send metrics and events to any Dynatrace environment by setting the `url` and `token` parameters.
 
 Please note how `metrics` and `events` is configured as a string containing YAML code - this
 allows to send more than one metric or event at once.
