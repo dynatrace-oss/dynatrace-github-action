@@ -1,4 +1,4 @@
-# Dynatrace Action
+# Dynatrace GitHub Action
 
 [![Build Status](https://github.com/actions/typescript-action/workflows/build-test/badge.svg)](https://github.com/actions/typescript-action/actions)
 
