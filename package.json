@@ -28,7 +28,7 @@
     "@actions/core": "^1.2.6",
     "@actions/http-client": "^1.0.9",
     "@types/js-yaml": "^4.0.0",
-    "node-notifier": "^9.0.0"
+    "node-notifier": "^9.0.1"
   },
   "devDependencies": {
     "@types/jest": "^26.0.20",
