@@ -2,7 +2,7 @@
 
 [![Build Status](https://github.com/actions/typescript-action/workflows/build-test/badge.svg)](https://github.com/actions/typescript-action/actions)
 
-This Action lets you send events and metrics to a Dynatrace monitoring environment from a GitHub workflow.
+This Action lets you send events and metrics to a Dynatrace monitoring environment from a GitHub workflow. 
 
 ## Usage
 
