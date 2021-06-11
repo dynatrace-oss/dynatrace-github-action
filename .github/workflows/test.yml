@@ -119,6 +119,20 @@ jobs:
                 branch: "${{ github.ref }}"
                 event: "${{ github.event_name }}"
                 owner: wolfgang
+            - type: CUSTOM_DEPLOYMENT    
+              source: GitHub
+              deploymentName: "GitHub Action"
+              deploymentVersion: "${{ github.ref }}"
+              deploymentProject: "${{ github.repository }}"
+              remediationAction: "None"
+              ciBackLink: "${{ github.repository }}"
+              entities:
+                - MOBILE_APPLICATION-C061BED4799B41C5
+              dimensions:
+                project: "${{ github.repository }}"
+                branch: "${{ github.ref }}"
+                event: "${{ github.event_name }}"
+                owner: wolfgang
       - name: Inform Dynatrace about a failed test (metric + event)
         if: ${{ failure() }}
         uses: ./
