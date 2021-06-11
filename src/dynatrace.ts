@@ -162,6 +162,7 @@ export async function sendEvents(
         customProperties: e.dimensions
       }
     } else if (e.type === 'CUSTOM_DEPLOYMENT') {
+      core.info(`Preparing a custom deployment event`)
       event = {
         eventType: e.type,
         attachRules: {
