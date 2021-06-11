@@ -148,16 +148,19 @@ export async function sendEvents(
       }
     }
     // create Dynatrace event structure
-    let event = {
-      eventType: e.type,
-      attachRules: {
-        entityIds: e.entities,
-        tagRule: tagAttachRules
-      },
-      source: e.source,
-      description: e.description,
-      title: e.title,
-      customProperties: e.dimensions
+    let event
+    if (e.type === 'CUSTOM_INFO' || e.type === 'AVAILABILITY_EVENT' || e.type === 'ERROR_EVENT' || e.type === 'PERFORMANCE_EVENT'  || e.type === 'RESOURCE_CONTENTION') {
+      event = {
+        eventType: e.type,
+        attachRules: {
+          entityIds: e.entities,
+          tagRule: tagAttachRules
+        },
+        source: e.source,
+        description: e.description,
+        title: e.title,
+        customProperties: e.dimensions
+      }
     }
 
     core.info(JSON.stringify(event))
