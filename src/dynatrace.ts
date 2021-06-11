@@ -148,7 +148,7 @@ export async function sendEvents(
       }
     }
     // create Dynatrace event structure
-    const event
+    let event
     if (e.type === 'CUSTOM_INFO' || e.type === 'AVAILABILITY_EVENT' || e.type === 'ERROR_EVENT' || e.type === 'PERFORMANCE_EVENT'  || e.type === 'RESOURCE_CONTENTION') {
       core.info(`Preparing a standard event`)
       event = {
