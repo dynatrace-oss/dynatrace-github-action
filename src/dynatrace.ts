@@ -148,7 +148,7 @@ export async function sendEvents(
       }
     }
     // create Dynatrace event structure
-    const event = {
+    let event = {
       eventType: e.type,
       attachRules: {
         entityIds: e.entities,
