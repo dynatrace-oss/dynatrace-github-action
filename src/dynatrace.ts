@@ -17,10 +17,10 @@ export interface Metric {
 
 export interface Event {
   type: string;
-  title: string;
   source: string;
   
   // optional properties for various event types
+  title?: string;
   description?: string;
   deploymentName?: string;
   deploymentVersion?: string;
@@ -159,6 +159,21 @@ export async function sendEvents(
         source: e.source,
         description: e.description,
         title: e.title,
+        customProperties: e.dimensions
+      }
+    } else if (e.type === 'CUSTOM_DEPLOYMENT') {
+      event = {
+        eventType: e.type,
+        attachRules: {
+          entityIds: e.entities,
+          tagRule: tagAttachRules
+        },
+        source: e.source,
+        deploymentName: e.deploymentName,
+        deploymentVersion: e.deploymentVersion,
+        deploymentProject: e.deploymentProject,
+        remediationAction: e.remediationAction,
+        ciBackLink: e.ciBackLink,
         customProperties: e.dimensions
       }
     }
