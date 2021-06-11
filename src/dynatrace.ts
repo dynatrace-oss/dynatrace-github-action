@@ -18,10 +18,21 @@ export interface Metric {
 export interface Event {
   type: string;
   title: string;
-  description: string;
   source: string;
+  
+  // optional properties for various event types
+  description?: string;
+  deploymentName?: string;
+  deploymentVersion?: string;
+  deploymentProject?: string;
+  remediationAction?: string;
+  ciBackLink?: string;
+  
+  // entity mapping
   entities?: string[];
   tags?: string[];
+  
+  // custom key-value properties
   dimensions?: Map<string, string>;
 }
 
