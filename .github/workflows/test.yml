@@ -87,9 +87,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          ref: 'main'
       - name: X Inform Dynatrace about a successful test (metric + event)
         if: ${{ success() }}
-        uses: ./@master
+        uses: ./
         with:
           url: '${{ secrets.DT_URL }}'
           token: '${{ secrets.DT_TOKEN }}'
@@ -136,7 +138,7 @@ jobs:
                 owner: wolfgang
       - name: Inform Dynatrace about a failed test (metric + event)
         if: ${{ failure() }}
-        uses: ./@master
+        uses: ./
         with:
           url: '${{ secrets.DT_URL }}'
           token: '${{ secrets.DT_TOKEN }}'
