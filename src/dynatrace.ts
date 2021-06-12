@@ -148,11 +148,11 @@ export async function sendEvents(
       }
     }
     // create Dynatrace event structure
-    let event
+    let payload
     let send = false
     if (e.type === 'CUSTOM_INFO' || e.type === 'AVAILABILITY_EVENT' || e.type === 'ERROR_EVENT' || e.type === 'PERFORMANCE_EVENT'  || e.type === 'RESOURCE_CONTENTION') {
       core.info(`Preparing a standard event`)
-      event = {
+      payload = {
         eventType: e.type,
         attachRules: {
           entityIds: e.entities,
@@ -166,7 +166,7 @@ export async function sendEvents(
       send = true
     } else if (e.type === 'CUSTOM_DEPLOYMENT') {
       core.info(`Preparing a custom deployment event`)
-      event = {
+      payload = {
         eventType: e.type,
         attachRules: {
           entityIds: e.entities,
@@ -186,11 +186,11 @@ export async function sendEvents(
     }
 
     if(send) {
-      core.info(JSON.stringify(event))
+      core.info(JSON.stringify(payload))
 
       const res: httpm.HttpClientResponse = await http.post(
         url.concat('/api/v1/events'),
-        JSON.stringify(event)
+        JSON.stringify(payload)
       )
 
       if (res.message.statusCode === undefined || res.message.statusCode >= 400) {

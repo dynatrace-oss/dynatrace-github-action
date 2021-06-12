@@ -26,7 +26,7 @@ export async function run(): Promise<void> {
     core.info(eStr)
     if(eStr.length > 5) {
       const events = yaml.load(eStr) as d.Event[];
-      //d.sendEvents(url, token, events);
+      d.sendEvents(url, token, events);
     }
   } catch (error) {
     core.setFailed(error.message);
