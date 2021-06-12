@@ -88,7 +88,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: X Inform Dynatrace about a successful test (metric + event)
         if: ${{ success() }}
-        uses: dynatrace-oss/dynatrace-github-action@v5.5
+        uses: dynatrace-oss/dynatrace-github-action@v5.6
         with:
           url: '${{ secrets.DT_URL }}'
           token: '${{ secrets.DT_TOKEN }}'
