@@ -89,7 +89,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: X Inform Dynatrace about a successful test (metric + event)
         if: ${{ success() }}
-        uses: ./
+        uses: ./@master
         with:
           url: '${{ secrets.DT_URL }}'
           token: '${{ secrets.DT_TOKEN }}'
@@ -136,7 +136,7 @@ jobs:
                 owner: wolfgang
       - name: Inform Dynatrace about a failed test (metric + event)
         if: ${{ failure() }}
-        uses: ./
+        uses: ./@master
         with:
           url: '${{ secrets.DT_URL }}'
           token: '${{ secrets.DT_TOKEN }}'
