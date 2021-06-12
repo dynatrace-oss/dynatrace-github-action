@@ -91,7 +91,7 @@ jobs:
           npm install
       - run: |
           npm run all
-      - name: X Inform Dynatrace about a successful test (metric + event)
+      - name: Inform Dynatrace about a successful test (metric + event)
         if: ${{ success() }}
         uses: ./
         with:
