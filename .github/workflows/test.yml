@@ -130,7 +130,7 @@ jobs:
               deploymentVersion: "${{ github.ref }}"
               deploymentProject: "${{ github.repository }}"
               remediationAction: "None"
-              ciBackLink: "${{ github.repository }}"
+              ciBackLink: "https://github.com/${{ github.repository }}"
               entities:
                 - MOBILE_APPLICATION-C061BED4799B41C5
               dimensions:

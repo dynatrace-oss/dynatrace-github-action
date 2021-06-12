@@ -14,7 +14,7 @@ To send a metric, configure a job step like the following:
 
 ```yaml
 - name: Build count
-  uses: dynatrace-oss/dynatrace-github-action@v5
+  uses: dynatrace-oss/dynatrace-github-action@v6
   with:
     url: '${{ secrets.DT_URL }}'
     token: '${{ secrets.DT_TOKEN }}'
@@ -47,7 +47,7 @@ steps:
     run: this-will-fail
   - name: Notify Dynatrace on Build Failed
     if: failure()
-    uses: dynatrace-oss/dynatrace-github-action@v5
+    uses: dynatrace-oss/dynatrace-github-action@v6
     with:
       url: '${{ secrets.DT_URL }}'
       token: '${{ secrets.DT_TOKEN }}'
@@ -71,6 +71,37 @@ steps:
 
 Find the resulting CI/CD pipeline events within Dynatrace, as shown below:
 ![events](./event.png)
+
+In another example, a deployment event can be sent onto a specific entity. In this example the event is sent to a mobile app whenever the Android GitHub Action build workflow succeeded:
+
+```yaml
+steps:
+  - name: checkout
+    uses: actions/checkout@v2
+  - name: build
+    run: this-will-fail
+  - name: Notify Dynatrace on Build Failed
+    if: failure()
+    uses: dynatrace-oss/dynatrace-github-action@v6
+    with:
+      url: '${{ secrets.DT_URL }}'
+      token: '${{ secrets.DT_TOKEN }}'
+      events: |
+        - type: CUSTOM_DEPLOYMENT
+          source: GitHub
+          deploymentName: "GitHub Action"
+          deploymentVersion: "${{ github.ref }}"
+          deploymentProject: "${{ github.repository }}"
+          remediationAction: "None"
+          ciBackLink: "https://github.com/${{ github.repository }}"
+          entities:
+            - MOBILE_APPLICATION-C061BED4799B41C5
+          dimensions:
+            project: "${{ github.repository }}"
+            branch: "${{ github.ref }}"
+            event: "${{ github.event_name }}"
+            owner: wolfgang
+```
 
 ## Development
 
