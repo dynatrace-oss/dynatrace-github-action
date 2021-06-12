@@ -87,8 +87,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          path: main
       - name: X Inform Dynatrace about a successful test (metric + event)
         if: ${{ success() }}
         uses: ./
