@@ -12,6 +12,7 @@ import * as yaml from 'js-yaml'
 
 export async function run(): Promise<void> {
   try {
+    core.info('Lets go');
     const url: string = core.getInput('url');
     const token: string = core.getInput('token');
 
