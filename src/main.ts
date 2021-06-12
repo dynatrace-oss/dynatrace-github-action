@@ -12,7 +12,6 @@ import * as yaml from 'js-yaml'
 
 export async function run(): Promise<void> {
   try {
-    core.info('Start Dynatrace');
     const url: string = core.getInput('url');
     const token: string = core.getInput('token');
 

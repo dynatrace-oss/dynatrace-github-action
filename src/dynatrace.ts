@@ -112,7 +112,7 @@ export async function sendEvents(
   token: string,
   events: Event[]
 ): Promise<void> {
-  core.info(`Sending ${events.length} events`)
+  core.info(`X Sending ${events.length} events`)
 
   const http: httpm.HttpClient = getClient(token, 'application/json')
 
@@ -149,6 +149,7 @@ export async function sendEvents(
     }
     // create Dynatrace event structure
     let event
+    let send = false
     if (e.type === 'CUSTOM_INFO' || e.type === 'AVAILABILITY_EVENT' || e.type === 'ERROR_EVENT' || e.type === 'PERFORMANCE_EVENT'  || e.type === 'RESOURCE_CONTENTION') {
       core.info(`Preparing a standard event`)
       event = {
@@ -162,6 +163,7 @@ export async function sendEvents(
         title: e.title,
         customProperties: e.dimensions
       }
+      send = true
     } else if (e.type === 'CUSTOM_DEPLOYMENT') {
       core.info(`Preparing a custom deployment event`)
       event = {
@@ -178,17 +180,22 @@ export async function sendEvents(
         ciBackLink: e.ciBackLink,
         customProperties: e.dimensions
       }
+      send = true
+    } else {
+      core.info(`Unsupported event type!`)
     }
 
-    core.info(JSON.stringify(event))
+    if(send) {
+      core.info(JSON.stringify(event))
 
-    const res: httpm.HttpClientResponse = await http.post(
-      url.concat('/api/v1/events'),
-      JSON.stringify(event)
-    )
+      const res: httpm.HttpClientResponse = await http.post(
+        url.concat('/api/v1/events'),
+        JSON.stringify(event)
+      )
 
-    if (res.message.statusCode === undefined || res.message.statusCode >= 400) {
-      throw new Error(`HTTP request failed: ${res.message.statusMessage}`)
-    }
+      if (res.message.statusCode === undefined || res.message.statusCode >= 400) {
+        throw new Error(`HTTP request failed: ${res.message.statusMessage}`)
+      }
+    } 
   }
 }
