@@ -73,7 +73,7 @@ export async function sendMetrics(
   token: string,
   metrics: Metric[]
 ): Promise<void> {
-  core.info(`Sendin ${metrics.length} metrics`)
+  core.info(`Sending ${metrics.length} metrics`)
 
   const http: httpm.HttpClient = getClient(token, 'text/plain')
   let lines = ''
@@ -112,7 +112,7 @@ export async function sendEvents(
   token: string,
   events: Event[]
 ): Promise<void> {
-  core.info(`X Sending ${events.length} events`)
+  core.info(`Y Sending ${events.length} events`)
 
   const http: httpm.HttpClient = getClient(token, 'application/json')
 
