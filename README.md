@@ -2,11 +2,15 @@
 
 [![Build Status](https://github.com/actions/typescript-action/workflows/build-test/badge.svg)](https://github.com/actions/typescript-action/actions)
 
-This Action lets you send events and metrics to a Dynatrace monitoring environment from a GitHub workflow. 
+This Action lets you send events and metrics to a Dynatrace monitoring environment from a GitHub workflow.
 
 ## Usage
 
 The action can send metrics and events to any Dynatrace environment by setting the `url` and `token` parameters.
+
+The `url` has to be in the form of your Dynatrace domain, e.g.: `https://{your-environment-id}.live.dynatrace.com`.
+
+The `token` is a Dynatrace API v1 token with the 'Access problems and event feed, metrics, and topology' access scope enabled.
 
 Please note how `metrics` and `events` is configured as a string containing YAML code - this
 allows to send more than one metric or event at once.
@@ -14,7 +18,7 @@ To send a metric, configure a job step like the following:
 
 ```yaml
 - name: Build count
-  uses: dynatrace-oss/dynatrace-github-action@v6
+  uses: dynatrace-oss/dynatrace-github-action@v7
   with:
     url: '${{ secrets.DT_URL }}'
     token: '${{ secrets.DT_TOKEN }}'
@@ -47,7 +51,7 @@ steps:
     run: this-will-fail
   - name: Notify Dynatrace on Build Failed
     if: failure()
-    uses: dynatrace-oss/dynatrace-github-action@v6
+    uses: dynatrace-oss/dynatrace-github-action@v7
     with:
       url: '${{ secrets.DT_URL }}'
       token: '${{ secrets.DT_TOKEN }}'
@@ -82,7 +86,7 @@ steps:
     run: this-will-fail
   - name: Notify Dynatrace on Build Failed
     if: failure()
-    uses: dynatrace-oss/dynatrace-github-action@v6
+    uses: dynatrace-oss/dynatrace-github-action@v7
     with:
       url: '${{ secrets.DT_URL }}'
       token: '${{ secrets.DT_TOKEN }}'
