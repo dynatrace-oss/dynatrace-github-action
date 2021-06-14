@@ -10,41 +10,41 @@ import * as core from '@actions/core'
 import * as httpm from '@actions/http-client'
 
 export interface Metric {
-  metric: string;
-  value: string;
-  dimensions?: Map<string, string>;
+  metric: string
+  value: string
+  dimensions?: Map<string, string>
 }
 
 export interface Event {
-  type: string;
-  source: string;
-  
+  type: string
+  source: string
+
   // optional properties for various event types
-  title?: string;
-  description?: string;
-  deploymentName?: string;
-  deploymentVersion?: string;
-  deploymentProject?: string;
-  remediationAction?: string;
-  ciBackLink?: string;
-  
+  title?: string
+  description?: string
+  deploymentName?: string
+  deploymentVersion?: string
+  deploymentProject?: string
+  remediationAction?: string
+  ciBackLink?: string
+
   // entity mapping
-  entities?: string[];
-  tags?: string[];
-  
+  entities?: string[]
+  tags?: string[]
+
   // custom key-value properties
-  dimensions?: Map<string, string>;
+  dimensions?: Map<string, string>
 }
 
 interface TagAttachRule {
-  meTypes: string[];
-  tags: Tag[];
+  meTypes: string[]
+  tags: Tag[]
 }
 
 interface Tag {
-  context: string;
-  key: string;
-  value?: string;
+  context: string
+  key: string
+  value?: string
 }
 
 function getClient(token: string, content: string): httpm.HttpClient {
@@ -80,7 +80,7 @@ export async function sendMetrics(
 
   for (const m of metrics) {
     lines = lines.concat(safeMetricKey(m.metric))
-    if(m.dimensions) {
+    if (m.dimensions) {
       for (const [key, value] of Object.entries(m.dimensions)) {
         if (value && value.length > 0) {
           lines = lines
@@ -92,7 +92,7 @@ export async function sendMetrics(
         }
       }
     }
-    
+
     lines = lines.concat(' ').concat(m.value).concat('\n')
   }
   core.info(lines)
@@ -117,9 +117,9 @@ export async function sendEvents(
   const http: httpm.HttpClient = getClient(token, 'application/json')
 
   for (const e of events) {
-    const tagAttachRules : TagAttachRule[] = [];
+    const tagAttachRules: TagAttachRule[] = []
     // extract tagging rules
-    if(e.tags) {
+    if (e.tags) {
       for (const t of e.tags) {
         const arr = t.split(':')
         if (arr.length === 2) {
@@ -150,7 +150,13 @@ export async function sendEvents(
     // create Dynatrace event structure
     let payload
     let send = false
-    if (e.type === 'CUSTOM_INFO' || e.type === 'AVAILABILITY_EVENT' || e.type === 'ERROR_EVENT' || e.type === 'PERFORMANCE_EVENT'  || e.type === 'RESOURCE_CONTENTION') {
+    if (
+      e.type === 'CUSTOM_INFO' ||
+      e.type === 'AVAILABILITY_EVENT' ||
+      e.type === 'ERROR_EVENT' ||
+      e.type === 'PERFORMANCE_EVENT' ||
+      e.type === 'RESOURCE_CONTENTION'
+    ) {
       core.info(`Preparing a standard event`)
       payload = {
         eventType: e.type,
@@ -185,7 +191,7 @@ export async function sendEvents(
       core.info(`Unsupported event type!`)
     }
 
-    if(send) {
+    if (send) {
       core.info(JSON.stringify(payload))
 
       const res: httpm.HttpClientResponse = await http.post(
@@ -193,9 +199,12 @@ export async function sendEvents(
         JSON.stringify(payload)
       )
 
-      if (res.message.statusCode === undefined || res.message.statusCode >= 400) {
+      if (
+        res.message.statusCode === undefined ||
+        res.message.statusCode >= 400
+      ) {
         throw new Error(`HTTP request failed: ${res.message.statusMessage}`)
       }
-    } 
+    }
   }
 }
