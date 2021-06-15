@@ -124,6 +124,17 @@ jobs:
                 branch: "${{ github.ref }}"
                 event: "${{ github.event_name }}"
                 owner: wolfgang
+            - title: "Failing Event Send Test"
+              type: CUSTOM_INFO    
+              description: "GitHub project ${{ github.repository }} was successfully tested"
+              source: GitHub
+              entities:
+                - WRONG-ENTITY-ID
+              dimensions:
+                project: "${{ github.repository }}"
+                branch: "${{ github.ref }}"
+                event: "${{ github.event_name }}"
+                owner: wolfgang
             - type: CUSTOM_DEPLOYMENT    
               source: GitHub
               deploymentName: "GitHub Action"
@@ -171,3 +182,4 @@ jobs:
                 branch: "${{ github.ref }}"
                 event: "${{ github.event_name }}"
                 owner: wolfgang
+            
