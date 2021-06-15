@@ -134,7 +134,11 @@ function sendEvents(url, token, events) {
             // create Dynatrace event structure
             let payload;
             let send = false;
-            if (e.type === 'CUSTOM_INFO' || e.type === 'AVAILABILITY_EVENT' || e.type === 'ERROR_EVENT' || e.type === 'PERFORMANCE_EVENT' || e.type === 'RESOURCE_CONTENTION') {
+            if (e.type === 'CUSTOM_INFO' ||
+                e.type === 'AVAILABILITY_EVENT' ||
+                e.type === 'ERROR_EVENT' ||
+                e.type === 'PERFORMANCE_EVENT' ||
+                e.type === 'RESOURCE_CONTENTION') {
                 core.info(`Preparing a standard event`);
                 payload = {
                     eventType: e.type,
@@ -172,9 +176,15 @@ function sendEvents(url, token, events) {
             }
             if (send) {
                 core.info(JSON.stringify(payload));
-                const res = yield http.post(url.concat('/api/v1/events'), JSON.stringify(payload));
-                if (res.message.statusCode === undefined || res.message.statusCode >= 400) {
-                    throw new Error(`HTTP request failed: ${res.message.statusMessage}`);
+                try {
+                    const res = yield http.post(url.concat('/api/v1/events'), JSON.stringify(payload));
+                    if (res.message.statusCode === undefined ||
+                        res.message.statusCode >= 400) {
+                        throw new Error(`HTTP request failed: ${res.message.statusMessage}`);
+                    }
+                }
+                catch (ex) {
+                    core.error(ex);
                 }
             }
         }

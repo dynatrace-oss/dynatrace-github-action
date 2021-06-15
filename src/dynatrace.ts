@@ -194,16 +194,20 @@ export async function sendEvents(
     if (send) {
       core.info(JSON.stringify(payload))
 
-      const res: httpm.HttpClientResponse = await http.post(
-        url.concat('/api/v1/events'),
-        JSON.stringify(payload)
-      )
+      try {
+        const res: httpm.HttpClientResponse = await http.post(
+          url.concat('/api/v1/events'),
+          JSON.stringify(payload)
+        )
 
-      if (
-        res.message.statusCode === undefined ||
-        res.message.statusCode >= 400
-      ) {
-        throw new Error(`HTTP request failed: ${res.message.statusMessage}`)
+        if (
+          res.message.statusCode === undefined ||
+          res.message.statusCode >= 400
+        ) {
+          throw new Error(`HTTP request failed: ${res.message.statusMessage}`)
+        }
+      } catch (ex) {
+        core.error(ex)
       }
     }
   }
