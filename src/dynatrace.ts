@@ -97,13 +97,17 @@ export async function sendMetrics(
   }
   core.info(lines)
 
-  const res: httpm.HttpClientResponse = await http.post(
-    url.concat('/api/v2/metrics/ingest'),
-    lines
-  )
+  try {
+    const res: httpm.HttpClientResponse = await http.post(
+      url.concat('/api/v2/metrics/ingest'),
+      lines
+    )
 
-  if (res.message.statusCode === undefined || res.message.statusCode >= 400) {
-    throw new Error(`HTTP request failed: ${res.message.statusMessage}`)
+    if (res.message.statusCode === undefined || res.message.statusCode >= 400) {
+      throw new Error(`HTTP request failed: ${res.message.statusMessage}`)
+    }
+  } catch (ex) {
+    core.error(ex)
   }
 }
 
