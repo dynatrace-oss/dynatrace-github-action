@@ -17,23 +17,11 @@ export interface Metric {
 
 export interface Event {
   type: string
-  source: string
-
-  // optional properties for various event types
   title?: string
-  description?: string
-  deploymentName?: string
-  deploymentVersion?: string
-  deploymentProject?: string
-  remediationAction?: string
-  ciBackLink?: string
-
-  // entity mapping
-  entities?: string[]
-  tags?: string[]
-
+  timeout?: number
+  entitySelector: string
   // custom key-value properties
-  dimensions?: Map<string, string>
+  properties?: Map<string, string>
 }
 
 interface TagAttachRule {
@@ -121,86 +109,28 @@ export async function sendEvents(
   const http: httpm.HttpClient = getClient(token, 'application/json')
 
   for (const e of events) {
-    const tagAttachRules: TagAttachRule[] = []
-    // extract tagging rules
-    if (e.tags) {
-      for (const t of e.tags) {
-        const arr = t.split(':')
-        if (arr.length === 2) {
-          tagAttachRules.push({
-            meTypes: [arr[0]],
-            tags: [
-              {
-                context: 'CONTEXTLESS',
-                key: arr[1]
-              }
-            ]
-          })
-        } else if (arr.length === 3) {
-          // tag with key and value
-          tagAttachRules.push({
-            meTypes: [arr[0]],
-            tags: [
-              {
-                context: 'CONTEXTLESS',
-                key: arr[1],
-                value: arr[2]
-              }
-            ]
-          })
-        }
-      }
-    }
     // create Dynatrace event structure
     let payload
-    let send = false
     if (
       e.type === 'CUSTOM_INFO' ||
       e.type === 'AVAILABILITY_EVENT' ||
       e.type === 'ERROR_EVENT' ||
       e.type === 'PERFORMANCE_EVENT' ||
-      e.type === 'RESOURCE_CONTENTION'
+      e.type === 'RESOURCE_CONTENTION' ||
+      e.type === 'CUSTOM_DEPLOYMENT'
     ) {
-      core.info(`Preparing a standard event`)
+      core.info(`Preparing the event`)
       payload = {
         eventType: e.type,
-        attachRules: {
-          entityIds: e.entities,
-          tagRule: tagAttachRules
-        },
-        source: e.source,
-        description: e.description,
+        
         title: e.title,
-        customProperties: e.dimensions
+        customProperties: e.properties
       }
-      send = true
-    } else if (e.type === 'CUSTOM_DEPLOYMENT') {
-      core.info(`Preparing a custom deployment event`)
-      payload = {
-        eventType: e.type,
-        attachRules: {
-          entityIds: e.entities,
-          tagRule: tagAttachRules
-        },
-        source: e.source,
-        deploymentName: e.deploymentName,
-        deploymentVersion: e.deploymentVersion,
-        deploymentProject: e.deploymentProject,
-        remediationAction: e.remediationAction,
-        ciBackLink: e.ciBackLink,
-        customProperties: e.dimensions
-      }
-      send = true
-    } else {
-      core.info(`Unsupported event type!`)
-    }
-
-    if (send) {
       core.info(JSON.stringify(payload))
 
       try {
         const res: httpm.HttpClientResponse = await http.post(
-          url.concat('/api/v1/events'),
+          url.concat('/api/v2/events/ingest'),
           JSON.stringify(payload)
         )
 
@@ -213,6 +143,8 @@ export async function sendEvents(
       } catch (ex) {
         core.error(ex)
       }
+    } else {
+      core.info(`Unsupported event type!`)
     }
   }
 }
