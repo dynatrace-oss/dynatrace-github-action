@@ -24,12 +24,6 @@ export interface Event {
   properties?: Map<string, string>
 }
 
-interface Tag {
-  context: string
-  key: string
-  value?: string
-}
-
 function getClient(token: string, content: string): httpm.HttpClient {
   return new httpm.HttpClient('dt-http-client', [], {
     headers: {
