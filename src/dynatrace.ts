@@ -93,7 +93,7 @@ export async function sendEvents(
   token: string,
   events: Event[]
 ): Promise<void> {
-  core.info(`Sending ${events.length} events x`)
+  core.info(`Sending ${events.length} events`)
 
   const http: httpm.HttpClient = getClient(token, 'application/json')
 
