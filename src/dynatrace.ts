@@ -24,11 +24,6 @@ export interface Event {
   properties?: Map<string, string>
 }
 
-interface TagAttachRule {
-  meTypes: string[]
-  tags: Tag[]
-}
-
 interface Tag {
   context: string
   key: string
