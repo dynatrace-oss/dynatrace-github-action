@@ -105,84 +105,23 @@ function sendEvents(url, token, events) {
         core.info(`Sending ${events.length} events`);
         const http = getClient(token, 'application/json');
         for (const e of events) {
-            const tagAttachRules = [];
-            // extract tagging rules
-            if (e.tags) {
-                for (const t of e.tags) {
-                    const arr = t.split(':');
-                    if (arr.length === 2) {
-                        tagAttachRules.push({
-                            meTypes: [arr[0]],
-                            tags: [
-                                {
-                                    context: 'CONTEXTLESS',
-                                    key: arr[1]
-                                }
-                            ]
-                        });
-                    }
-                    else if (arr.length === 3) {
-                        // tag with key and value
-                        tagAttachRules.push({
-                            meTypes: [arr[0]],
-                            tags: [
-                                {
-                                    context: 'CONTEXTLESS',
-                                    key: arr[1],
-                                    value: arr[2]
-                                }
-                            ]
-                        });
-                    }
-                }
-            }
             // create Dynatrace event structure
             let payload;
-            let send = false;
             if (e.type === 'CUSTOM_INFO' ||
                 e.type === 'AVAILABILITY_EVENT' ||
                 e.type === 'ERROR_EVENT' ||
                 e.type === 'PERFORMANCE_EVENT' ||
-                e.type === 'RESOURCE_CONTENTION') {
-                core.info(`Preparing a standard event`);
+                e.type === 'RESOURCE_CONTENTION' ||
+                e.type === 'CUSTOM_DEPLOYMENT') {
+                core.info(`Preparing the event`);
                 payload = {
                     eventType: e.type,
-                    attachRules: {
-                        entityIds: e.entities,
-                        tagRule: tagAttachRules
-                    },
-                    source: e.source,
-                    description: e.description,
                     title: e.title,
-                    customProperties: e.dimensions
+                    customProperties: e.properties
                 };
-                send = true;
-            }
-            else if (e.type === 'CUSTOM_DEPLOYMENT') {
-                core.info(`Preparing a custom deployment event`);
-                payload = {
-                    eventType: e.type,
-                    attachRules: {
-                        entityIds: e.entities,
-                        tagRule: tagAttachRules
-                    },
-                    source: e.source,
-                    deploymentName: e.deploymentName,
-                    deploymentVersion: e.deploymentVersion,
-                    deploymentProject: e.deploymentProject,
-                    remediationAction: e.remediationAction,
-                    ciBackLink: e.ciBackLink,
-                    customProperties: e.dimensions
-                };
-                send = true;
-            }
-            else {
-                core.info(`Unsupported event type!`);
-            }
-            if (send) {
                 core.info(JSON.stringify(payload));
                 try {
-                    const res = yield http.post(url.concat('/api/v1/events'), JSON.stringify(payload));
+                    const res = yield http.post(url.concat('/api/v2/events/ingest'), JSON.stringify(payload));
                     if (res.message.statusCode === undefined ||
                         res.message.statusCode >= 400) {
                         throw new Error(`HTTP request failed: ${res.message.statusMessage}`);
@@ -191,6 +130,9 @@ function sendEvents(url, token, events) {
                 catch (ex) {
                     core.error(ex);
                 }
+            }
+            else {
+                core.info(`Unsupported event type!`);
             }
         }
     });
