@@ -127,9 +127,11 @@ export async function sendEvents(
           url.concat('/api/v2/events/ingest'),
           JSON.stringify(payload)
         )
-        core.info(JSON.stringify(res.message))
+        core.info(await res.readBody())
         if (res.message.statusCode !== 201) {
-          core.error(`HTTP request failed: ${res})}`)
+          core.error(
+            `HTTP request failed with status code: ${res.message.statusCode})}`
+          )
         }
       } catch (error) {
         core.error(`HTTP request failed: ${error}`)
