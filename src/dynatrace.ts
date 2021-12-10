@@ -76,7 +76,7 @@ export async function sendMetrics(
 
   try {
     const res: httpm.HttpClientResponse = await http.post(
-      url.concat('/api/v2/metrics/ingest'),
+      url.replace(/\/$/, '').concat('/api/v2/metrics/ingest'),
       lines
     )
     core.info(await res.readBody())
@@ -96,7 +96,6 @@ export async function sendEvents(
   events: Event[]
 ): Promise<void> {
   core.info(`Sending ${events.length} events`)
-
   const http: httpm.HttpClient = getClient(token, 'application/json')
 
   for (const e of events) {
@@ -126,7 +125,7 @@ export async function sendEvents(
 
       try {
         const res: httpm.HttpClientResponse = await http.post(
-          url.concat('/api/v2/events/ingest'),
+          url.replace(/\/$/, '').concat('/api/v2/events/ingest'),
           JSON.stringify(payload)
         )
         core.info(await res.readBody())

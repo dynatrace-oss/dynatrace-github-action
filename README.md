@@ -63,7 +63,7 @@ steps:
         - title: "Build failed"
           type: CUSTOM_INFO
           entitySelector: type(host),entityName(myHost)
-          dimensions:
+          properties:
             description: "Branch ${{ github.ref }} failed to build"
             source: GitHub
             project: "${{ github.repository }}"
@@ -93,7 +93,7 @@ steps:
         - type: CUSTOM_DEPLOYMENT
           title: Mobile app version deployment failed
           entitySelector: type(MOBILE_APPLICATION),entityId(MOBILE_APPLICATION-C061BED4799B41C5)
-          dimensions:
+          properties:
             source: GitHub
             deploymentName: "GitHub Action"
             deploymentVersion: "${{ github.ref }}"

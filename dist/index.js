@@ -89,7 +89,7 @@ function sendMetrics(url, token, metrics) {
         }
         core.info(lines);
         try {
-            const res = yield http.post(url.concat('/api/v2/metrics/ingest'), lines);
+            const res = yield http.post(url.replace(/\/$/, '').concat('/api/v2/metrics/ingest'), lines);
             core.info(yield res.readBody());
             if (res.message.statusCode !== 202) {
                 core.error(`HTTP request failed with status code: ${res.message.statusCode})}`);
@@ -128,7 +128,7 @@ function sendEvents(url, token, events) {
                 };
                 core.info(JSON.stringify(payload));
                 try {
-                    const res = yield http.post(url.concat('/api/v2/events/ingest'), JSON.stringify(payload));
+                    const res = yield http.post(url.replace(/\/$/, '').concat('/api/v2/events/ingest'), JSON.stringify(payload));
                     core.info(yield res.readBody());
                     if (res.message.statusCode !== 201) {
                         core.error(`HTTP request failed with status code: ${res.message.statusCode})}`);
