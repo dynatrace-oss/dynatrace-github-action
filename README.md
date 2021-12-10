@@ -2,15 +2,16 @@
 
 [![Build Status](https://github.com/actions/typescript-action/workflows/build-test/badge.svg)](https://github.com/actions/typescript-action/actions)
 
-This Action lets you send events and metrics to a Dynatrace monitoring environment from a GitHub workflow.
+This GitHub Action enables CI/CD workflows to report events and metrics to a Dynatrace monitoring environment.
 
 ## Usage
 
-The action can send metrics and events to any Dynatrace environment by setting the `url` and `token` parameters.
+The action configuration must specify the Dynatrace `url` as well as an API `token` to be able to send information into a Dynatrace environment.
+We strongly advise to use GitHub repository placeholders for both information here to prevent the exposure of secrets in your repository!
 
-The `url` has to be in the form of your Dynatrace domain, e.g.: `https://{your-environment-id}.live.dynatrace.com`.
+The `url` must contain a Dynatrace domain, e.g.: `https://{your-environment-id}.live.dynatrace.com`.
 
-The `token` is a Dynatrace API v2 token with 'Ingest metrics' and/or 'Ingest events' scope enabled, as shown below:
+The `token` must contain a Dynatrace API v2 token with 'Ingest metrics' and/or 'Ingest events' scope enabled, as shown below:
 
 ![token](./token.png)
 
