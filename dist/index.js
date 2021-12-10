@@ -90,12 +90,13 @@ function sendMetrics(url, token, metrics) {
         core.info(lines);
         try {
             const res = yield http.post(url.concat('/api/v2/metrics/ingest'), lines);
-            if (res.message.statusCode === undefined || res.message.statusCode >= 400) {
-                throw new Error(`HTTP request failed: ${res.message.statusMessage}`);
+            core.info(yield res.readBody());
+            if (res.message.statusCode !== 202) {
+                core.error(`HTTP request failed with status code: ${res.message.statusCode})}`);
             }
         }
         catch (error) {
-            core.error(`Exception while sending HTTP request`);
+            core.error(`Exception while sending HTTP metric request`);
         }
     });
 }
@@ -134,7 +135,7 @@ function sendEvents(url, token, events) {
                     }
                 }
                 catch (error) {
-                    core.error(`HTTP request failed: ${error}`);
+                    core.error(`Exception while sending HTTP event request`);
                 }
             }
             else {

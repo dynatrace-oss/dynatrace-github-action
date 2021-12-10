@@ -79,12 +79,14 @@ export async function sendMetrics(
       url.concat('/api/v2/metrics/ingest'),
       lines
     )
-
-    if (res.message.statusCode === undefined || res.message.statusCode >= 400) {
-      throw new Error(`HTTP request failed: ${res.message.statusMessage}`)
+    core.info(await res.readBody())
+    if (res.message.statusCode !== 202) {
+      core.error(
+        `HTTP request failed with status code: ${res.message.statusCode})}`
+      )
     }
   } catch (error) {
-    core.error(`Exception while sending HTTP request`)
+    core.error(`Exception while sending HTTP metric request`)
   }
 }
 
@@ -134,7 +136,7 @@ export async function sendEvents(
           )
         }
       } catch (error) {
-        core.error(`HTTP request failed: ${error}`)
+        core.error(`Exception while sending HTTP event request`)
       }
     } else {
       core.info(`Unsupported event type!`)
