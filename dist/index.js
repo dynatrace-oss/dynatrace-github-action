@@ -136,6 +136,7 @@ function sendEvents(url, token, events) {
                 }
                 catch (error) {
                     core.error(`Exception while sending HTTP request`);
+                    throw new Error(`HTTP request failed: ${error}`);
                 }
             }
             else {
