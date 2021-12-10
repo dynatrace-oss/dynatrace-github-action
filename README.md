@@ -37,8 +37,8 @@ To send a metric, configure a job step like the following:
 Analyze the resulting CI/CD pipeline metric within Dynatrace, as shown below:
 ![chart](./metric.png)
 
-You can also send Dynatrace events from workflows, same as `metric` please note
-how `events` is configured as a string containing YAML code.
+You can also send Dynatrace events from workflows, same as `metric`. See below
+how an event is configured within the `events` section.
 The standard entity selector query is used to push the event on a selected entity or onto a
 cohort of entities e.g.: a tagged set of services. See the Dynatrace [help page on entity selectors](https://www.dynatrace.com/support/help/shortlink/api-entities-v2-selector).
 See some example entity selectors below:
