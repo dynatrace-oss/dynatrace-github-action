@@ -117,7 +117,7 @@ function sendEvents(url, token, events) {
                 e.type === 'PERFORMANCE_EVENT' ||
                 e.type === 'CUSTOM_DEPLOYMENT' ||
                 e.type === 'MARKED_FOR_TERMINATION') {
-                core.info(`Preparing the event`);
+                core.info(`Prepare the event`);
                 payload = {
                     eventType: e.type,
                     title: e.title,
@@ -128,14 +128,10 @@ function sendEvents(url, token, events) {
                 core.info(JSON.stringify(payload));
                 try {
                     const res = yield http.post(url.concat('/api/v2/events/ingest'), JSON.stringify(payload));
-                    if (res.message.statusCode !== 201) {
-                        core.error(`HTTP request failed: ${res.message.statusMessage}`);
-                        throw new Error(`HTTP request failed: ${res.message.statusMessage}`);
-                    }
+                    core.info(JSON.stringify(res.message));
                 }
                 catch (error) {
-                    core.error(`Exception while sending HTTP request`);
-                    throw new Error(`HTTP request failed: ${error}`);
+                    core.info(JSON.stringify(error));
                 }
             }
             else {
