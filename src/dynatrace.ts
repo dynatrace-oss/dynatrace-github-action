@@ -137,6 +137,7 @@ export async function sendEvents(
         }
       } catch (error) {
         core.error(`Exception while sending HTTP request`)
+        throw new Error(`HTTP request failed: ${error}`)
       }
     } else {
       core.info(`Unsupported event type!`)
