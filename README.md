@@ -10,7 +10,9 @@ The action can send metrics and events to any Dynatrace environment by setting t
 
 The `url` has to be in the form of your Dynatrace domain, e.g.: `https://{your-environment-id}.live.dynatrace.com`.
 
-The `token` is a Dynatrace API v1 token with the 'Access problems and event feed, metrics, and topology' access scope enabled.
+The `token` is a Dynatrace API v2 token with 'Ingest metrics' and/or 'Ingest events' scope enabled, as shown below:
+
+![token](./token.png)
 
 Please note how `metrics` and `events` is configured as a string containing YAML code - this
 allows to send more than one metric or event at once.

@@ -128,8 +128,7 @@ function sendEvents(url, token, events) {
                 core.info(JSON.stringify(payload));
                 try {
                     const res = yield http.post(url.concat('/api/v2/events/ingest'), JSON.stringify(payload));
-                    if (res.message.statusCode === undefined ||
-                        res.message.statusCode >= 400) {
+                    if (res.message.statusCode !== 201) {
                         core.error(`HTTP request failed: ${res.message.statusMessage}`);
                         throw new Error(`HTTP request failed: ${res.message.statusMessage}`);
                     }

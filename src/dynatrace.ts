@@ -128,10 +128,7 @@ export async function sendEvents(
           JSON.stringify(payload)
         )
 
-        if (
-          res.message.statusCode === undefined ||
-          res.message.statusCode >= 400
-        ) {
+        if (res.message.statusCode !== 201) {
           core.error(`HTTP request failed: ${res.message.statusMessage}`)
           throw new Error(`HTTP request failed: ${res.message.statusMessage}`)
         }
