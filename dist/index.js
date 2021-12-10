@@ -123,7 +123,7 @@ function sendEvents(url, token, events) {
                     title: e.title,
                     timeout: e.timeout,
                     entitySelector: e.entitySelector,
-                    customProperties: e.properties
+                    properties: e.properties
                 };
                 core.info(JSON.stringify(payload));
                 try {
