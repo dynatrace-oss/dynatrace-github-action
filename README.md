@@ -21,7 +21,7 @@ To send a metric, configure a job step like the following:
 
 ```yaml
 - name: Build count
-  uses: dynatrace-oss/dynatrace-github-action@v7
+  uses: dynatrace-oss/dynatrace-github-action@v8
   with:
     url: '${{ secrets.DT_URL }}'
     token: '${{ secrets.DT_TOKEN }}'
@@ -56,7 +56,7 @@ steps:
     run: this-will-fail
   - name: Notify Dynatrace on Build Failed
     if: failure()
-    uses: dynatrace-oss/dynatrace-github-action@v7
+    uses: dynatrace-oss/dynatrace-github-action@v8
     with:
       url: '${{ secrets.DT_URL }}'
       token: '${{ secrets.DT_TOKEN }}'
@@ -86,7 +86,7 @@ steps:
     run: this-will-fail
   - name: Notify Dynatrace on Build Failed
     if: failure()
-    uses: dynatrace-oss/dynatrace-github-action@v7
+    uses: dynatrace-oss/dynatrace-github-action@v8
     with:
       url: '${{ secrets.DT_URL }}'
       token: '${{ secrets.DT_TOKEN }}'
