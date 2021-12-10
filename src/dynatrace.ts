@@ -129,10 +129,10 @@ export async function sendEvents(
         )
         core.info(JSON.stringify(res.message))
         if (res.message.statusCode !== 201) {
-          core.error(`HTTP request failed: ${JSON.stringify(res.message)}`)
+          core.error(`HTTP request failed: ${res})}`)
         }
       } catch (error) {
-        core.error(`HTTP request failed: ${JSON.stringify(error)}`)
+        core.error(`HTTP request failed: ${error}`)
       }
     } else {
       core.info(`Unsupported event type!`)

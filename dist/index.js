@@ -130,11 +130,11 @@ function sendEvents(url, token, events) {
                     const res = yield http.post(url.concat('/api/v2/events/ingest'), JSON.stringify(payload));
                     core.info(JSON.stringify(res.message));
                     if (res.message.statusCode !== 201) {
-                        core.error(`HTTP request failed: ${JSON.stringify(res.message)}`);
+                        core.error(`HTTP request failed: ${res})}`);
                     }
                 }
                 catch (error) {
-                    core.error(`HTTP request failed: ${JSON.stringify(error)}`);
+                    core.error(`HTTP request failed: ${error}`);
                 }
             }
             else {
