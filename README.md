@@ -37,10 +37,12 @@ Analyze the resulting CI/CD pipeline metric within Dynatrace, as shown below:
 
 You can also send Dynatrace events from workflows, same as `metric` please note
 how `events` is configured as a string containing YAML code.
-To push an event onto an entity, either a list of entity ids is necessary or 
-one or more tag query statements. A tag query statement always contains the type of
-the entity to search for (HOST) followed by a ':', a tag key and optionally followed by 
-':' and a tag value.  
+The standard entity selector query is used to push the event on a selected entity or onto a
+cohort of entities e.g.: a tagged set of services. See the Dynatrace [help page on entity selectors](https://www.dynatrace.com/support/help/shortlink/api-entities-v2-selector).
+See some example entity selectors below:
+- type(host),tag(prod) Selects all hosts with a tag 'prod'.
+- type(service),entityName(login) Selects services with the name 'login'
+
 For example, to send an event whenever a job has failed:
 
 ```yaml
@@ -58,15 +60,10 @@ steps:
       events: |
         - title: "Build failed"
           type: CUSTOM_INFO
-          description: "Branch ${{ github.ref }} failed to build"
-          source: GitHub
-          tags:
-            - SERVICE:MyApp
-            - HOST:MyApp:value
-          entities:
-            - HOST-12345678
-            - SERVICE-123212231
+          entitySelector: type(host),entityName(myHost)
           dimensions:
+            description: "Branch ${{ github.ref }} failed to build"
+            source: GitHub
             project: "${{ github.repository }}"
             branch: "${{ github.ref }}"
             event: "${{ github.event_name }}"
@@ -92,15 +89,15 @@ steps:
       token: '${{ secrets.DT_TOKEN }}'
       events: |
         - type: CUSTOM_DEPLOYMENT
-          source: GitHub
-          deploymentName: "GitHub Action"
-          deploymentVersion: "${{ github.ref }}"
-          deploymentProject: "${{ github.repository }}"
-          remediationAction: "None"
-          ciBackLink: "https://github.com/${{ github.repository }}"
-          entities:
-            - MOBILE_APPLICATION-C061BED4799B41C5
+          title: Mobile app version deployment failed
+          entitySelector: type(MOBILE_APPLICATION),entityId(MOBILE_APPLICATION-C061BED4799B41C5)
           dimensions:
+            source: GitHub
+            deploymentName: "GitHub Action"
+            deploymentVersion: "${{ github.ref }}"
+            deploymentProject: "${{ github.repository }}"
+            remediationAction: "None"
+            ciBackLink: "https://github.com/${{ github.repository }}"
             project: "${{ github.repository }}"
             branch: "${{ github.ref }}"
             event: "${{ github.event_name }}"

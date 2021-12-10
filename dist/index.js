@@ -94,8 +94,8 @@ function sendMetrics(url, token, metrics) {
                 throw new Error(`HTTP request failed: ${res.message.statusMessage}`);
             }
         }
-        catch (ex) {
-            core.error(ex);
+        catch (error) {
+            core.error(`Exception while sending HTTP request`);
         }
     });
 }
@@ -108,15 +108,21 @@ function sendEvents(url, token, events) {
             // create Dynatrace event structure
             let payload;
             if (e.type === 'CUSTOM_INFO' ||
+                e.type === 'CUSTOM_ALERT' ||
+                e.type === 'CUSTOM_ANNOTATION' ||
+                e.type === 'CUSTOM_CONFIGURATION' ||
+                e.type === 'RESOURCE_CONTENTION_EVENT' ||
                 e.type === 'AVAILABILITY_EVENT' ||
                 e.type === 'ERROR_EVENT' ||
                 e.type === 'PERFORMANCE_EVENT' ||
-                e.type === 'RESOURCE_CONTENTION' ||
-                e.type === 'CUSTOM_DEPLOYMENT') {
+                e.type === 'CUSTOM_DEPLOYMENT' ||
+                e.type === 'MARKED_FOR_TERMINATION') {
                 core.info(`Preparing the event`);
                 payload = {
                     eventType: e.type,
                     title: e.title,
+                    timeout: e.timeout,
+                    entitySelector: e.entitySelector,
                     customProperties: e.properties
                 };
                 core.info(JSON.stringify(payload));
@@ -124,11 +130,12 @@ function sendEvents(url, token, events) {
                     const res = yield http.post(url.concat('/api/v2/events/ingest'), JSON.stringify(payload));
                     if (res.message.statusCode === undefined ||
                         res.message.statusCode >= 400) {
+                        core.error(`HTTP request failed: ${res.message.statusMessage}`);
                         throw new Error(`HTTP request failed: ${res.message.statusMessage}`);
                     }
                 }
-                catch (ex) {
-                    core.error(ex);
+                catch (error) {
+                    core.error(`Exception while sending HTTP request`);
                 }
             }
             else {
