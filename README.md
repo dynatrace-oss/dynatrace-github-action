@@ -27,12 +27,12 @@ To send a metric, configure a job step like the following:
     token: '${{ secrets.DT_TOKEN }}'
     metrics: |
       - metric: "github.metric1"
-      value: "1.0"
-      dimensions:
-        project: "${{ github.repository }}"
-        branch: "${{ github.ref }}"
-        event: "${{ github.event_name }}"
-        owner: wolfgang
+        value: "1.0"
+        dimensions:
+          project: "${{ github.repository }}"
+          branch: "${{ github.ref }}"
+          event: "${{ github.event_name }}"
+          owner: wolfgang
 ```
 
 Analyze the resulting CI/CD pipeline metric within Dynatrace, as shown below:
