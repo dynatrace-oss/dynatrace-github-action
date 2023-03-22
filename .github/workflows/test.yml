@@ -15,11 +15,7 @@ jobs:
       - run: |
           npm install
       - run: |
-          export NODE_OPTIONS=--openssl-legacy-provider
-      - run: |
-          echo $NODE_OPTIONS
-      - run: |
-          npm run all
+          export NODE_OPTIONS=--openssl-legacy-provider npm run all
 
   test: # make sure the action works on a clean machine without building
     runs-on: ubuntu-latest
@@ -28,8 +24,4 @@ jobs:
       - run: |
           npm install
       - run: |
-          export NODE_OPTIONS=--openssl-legacy-provider
-      - run: |
-          echo $NODE_OPTIONS
-      - run: |
-          npm run all
+          export NODE_OPTIONS=--openssl-legacy-provider npm run all
