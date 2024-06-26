@@ -1,5 +1,5 @@
 /*
-Copyright 2020 Dynatrace LLC
+Copyright 2024 Dynatrace LLC
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
 
@@ -9,40 +9,107 @@ Unless required by applicable law or agreed to in writing, software distributed 
 import * as core from '@actions/core'
 import * as httpm from '@actions/http-client'
 
+const SUPPORTED_METRIC_FORMATS: string[] = ['gauge', 'count']
+const SUPPORTED_EVENT_TYPES: string[] = [
+  'CUSTOM_INFO',
+  'CUSTOM_ALERT',
+  'CUSTOM_ANNOTATION',
+  'CUSTOM_CONFIGURATION',
+  'RESOURCE_CONTENTION_EVENT',
+  'AVAILABILITY_EVENT',
+  'ERROR_EVENT',
+  'PERFORMANCE_EVENT',
+  'CUSTOM_DEPLOYMENT',
+  'MARKED_FOR_TERMINATION'
+]
+
+export type Properties = { [key: string]: string }
+export type Dimensions = { [key: string]: string }
+
 export interface Metric {
   metric: string
   value: string
-  dimensions?: Map<string, string>
+  format?: string
+  timestamp?: number
+  dimensions?: Dimensions
 }
 
 export interface Event {
   type: string
-  title?: string
+  title: string
   timeout?: number
-  entitySelector: string
-  // custom key-value properties
-  properties?: Map<string, string>
+  startTime?: number
+  endTime?: number
+  entitySelector?: string
+  properties?: Properties
 }
 
-function getClient(token: string, content: string): httpm.HttpClient {
-  return new httpm.HttpClient('dt-http-client', [], {
-    headers: {
-      Authorization: 'Api-Token '.concat(token),
-      'Content-Type': content
+export function safeKey(key: string): string {
+  return key.toLowerCase().replace(/[^.0-9a-z_-]/gi, '_')
+}
+
+export function safeValue(value: string): string {
+  return value
+}
+
+export function metric2line(metric: Metric): string {
+  // -- key
+  let line = safeKey(metric.metric)
+
+  // -- dimensions
+  if (metric.dimensions) {
+    for (const [key, value] of Object.entries(metric.dimensions)) {
+      if (value && value.length > 0) {
+        line += `,${safeKey(key)}="${safeValue(value)}"`
+      }
     }
-  })
+  }
+
+  // -- format
+  if (metric.format) {
+    if (SUPPORTED_METRIC_FORMATS.includes(metric.format)) {
+      line += ` ${metric.format},${metric.value}`
+    } else {
+      throw Error(`Unsupported Metric format ${metric.format}`)
+    }
+  } else line += ` ${metric.value}`
+
+  // -- timestamp
+  if (metric.timestamp) line += ` ${metric.timestamp}`
+
+  return line
 }
 
-export function safeMetricKey(mkey: string): string {
-  return mkey.toLowerCase().replace(/[^.0-9a-z_-]/gi, '_')
-}
+export function event2payload(event: Event): {
+  [key: string]: number | string | Properties
+} {
+  let payload: { [key: string]: number | string | Properties } = {}
+  if (SUPPORTED_EVENT_TYPES.includes(event.type)) {
+    // start with type and title
+    payload = {
+      eventType: event.type,
+      title: event.title
+    }
 
-export function safeDimKey(dkey: string): string {
-  return dkey.toLowerCase().replace(/[^.0-9a-z_-]/gi, '_')
-}
+    // -- timeout
+    if (event.timeout) payload.timeout = event.timeout
 
-export function safeDimValue(val: string): string {
-  return val
+    // -- startTime
+    if (event.startTime) payload.startTime = event.startTime
+
+    // -- endTime
+    if (event.endTime) payload.endTime = event.endTime
+
+    // -- entitySelector
+    if (event.entitySelector) payload.entitySelector = event.entitySelector
+
+    // -- properties
+    if (event.properties) payload.properties = event.properties
+
+    return payload
+  } else {
+    throw Error(`Unsupported Event type ${event.type}`)
+  }
 }
 
 export async function sendMetrics(
@@ -50,43 +117,26 @@ export async function sendMetrics(
   token: string,
   metrics: Metric[]
 ): Promise<void> {
-  core.info(`Sending ${metrics.length} metrics`)
+  core.info(`Sending ${metrics.length} metric(s)`)
+
+  const lines: string[] = []
+  for (const metric of metrics) {
+    const line = metric2line(metric)
+    core.info(line)
+    lines.push(line)
+  }
 
   const http: httpm.HttpClient = getClient(token, 'text/plain')
-  let lines = ''
+  const res: httpm.HttpClientResponse = await http.post(
+    `${url}/api/v2/metrics/ingest`,
+    lines.join('\n')
+  )
 
-  for (const m of metrics) {
-    lines = lines.concat(safeMetricKey(m.metric))
-    if (m.dimensions) {
-      for (const [key, value] of Object.entries(m.dimensions)) {
-        if (value && value.length > 0) {
-          lines = lines
-            .concat(',')
-            .concat(safeDimKey(key))
-            .concat('="')
-            .concat(safeDimValue(value))
-            .concat('"')
-        }
-      }
-    }
-
-    lines = lines.concat(' ').concat(m.value).concat('\n')
-  }
-  core.info(lines)
-
-  try {
-    const res: httpm.HttpClientResponse = await http.post(
-      url.replace(/\/$/, '').concat('/api/v2/metrics/ingest'),
-      lines
+  core.info(await res.readBody())
+  if (res.message.statusCode !== 202) {
+    throw Error(
+      `HTTP request failed with status code: ${res.message.statusCode}`
     )
-    core.info(await res.readBody())
-    if (res.message.statusCode !== 202) {
-      core.error(
-        `HTTP request failed with status code: ${res.message.statusCode})}`
-      )
-    }
-  } catch (error) {
-    core.error(`Exception while sending HTTP metric request`)
   }
 }
 
@@ -95,50 +145,32 @@ export async function sendEvents(
   token: string,
   events: Event[]
 ): Promise<void> {
-  core.info(`Sending ${events.length} events`)
-  const http: httpm.HttpClient = getClient(token, 'application/json')
+  core.info(`Sending ${events.length} event(s)`)
 
-  for (const e of events) {
-    // create Dynatrace event structure
-    let payload
-    if (
-      e.type === 'CUSTOM_INFO' ||
-      e.type === 'CUSTOM_ALERT' ||
-      e.type === 'CUSTOM_ANNOTATION' ||
-      e.type === 'CUSTOM_CONFIGURATION' ||
-      e.type === 'RESOURCE_CONTENTION_EVENT' ||
-      e.type === 'AVAILABILITY_EVENT' ||
-      e.type === 'ERROR_EVENT' ||
-      e.type === 'PERFORMANCE_EVENT' ||
-      e.type === 'CUSTOM_DEPLOYMENT' ||
-      e.type === 'MARKED_FOR_TERMINATION'
-    ) {
-      core.info(`Prepare the event`)
-      payload = {
-        eventType: e.type,
-        title: e.title,
-        timeout: e.timeout,
-        entitySelector: e.entitySelector,
-        properties: e.properties
-      }
-      core.info(JSON.stringify(payload))
+  for (const event of events) {
+    const payload = event2payload(event)
 
-      try {
-        const res: httpm.HttpClientResponse = await http.post(
-          url.replace(/\/$/, '').concat('/api/v2/events/ingest'),
-          JSON.stringify(payload)
-        )
-        core.info(await res.readBody())
-        if (res.message.statusCode !== 201) {
-          core.error(
-            `HTTP request failed with status code: ${res.message.statusCode})}`
-          )
-        }
-      } catch (error) {
-        core.error(`Exception while sending HTTP event request`)
-      }
-    } else {
-      core.info(`Unsupported event type!`)
+    core.info(JSON.stringify(payload))
+    const http: httpm.HttpClient = getClient(token, 'application/json')
+    const res: httpm.HttpClientResponse = await http.post(
+      `${url}/api/v2/events/ingest`,
+      JSON.stringify(payload)
+    )
+
+    core.info(await res.readBody())
+    if (res.message.statusCode !== 201) {
+      throw Error(
+        `HTTP request failed with status code: ${res.message.statusCode})}`
+      )
     }
   }
+}
+
+function getClient(token: string, content: string): httpm.HttpClient {
+  return new httpm.HttpClient('dt-http-client', [], {
+    headers: {
+      Authorization: `Api-Token ${token}`,
+      'Content-Type': content
+    }
+  })
 }

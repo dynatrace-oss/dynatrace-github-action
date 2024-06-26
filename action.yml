@@ -1,22 +1,23 @@
-name: 'DynatraceAction'
-description: 'Action that sends metrics and events to a Dynatrace monitoring environment from a GitHub workflow'
-author: 'Wolfgang Beer'
+name: Dynatrace Action
+description:
+  An Action that sends Events and Metrics to a Dynatrace monitoring environment
+author: Wolfgang Beer
 inputs:
-  url: 
+  url:
     required: true
-    description: 'A valid Dynatrace URL'
+    description: Dynatrace URL
   token:
     required: true
-    description: 'A valid Dynatrace API-token'
+    description: Dynatrace API-token
   metrics:
-    description: 'A list of metrics objects to send'
+    description: Inline YAML list of Metrics to send
     default: '[]'
   events:
-    description: 'A list of event objects to send'
+    description: Inline YAML list of Events to send
     default: '[]'
 runs:
-  using: 'node16'
-  main: 'dist/index.js'
+  using: node20
+  main: dist/index.js
 branding:
-  icon: 'bar-chart-2'
-  color: 'black'
+  icon: bar-chart-2
+  color: black

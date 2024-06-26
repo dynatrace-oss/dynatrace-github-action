@@ -1,0 +1,37 @@
+name: Release Action
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release action
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push version tags
+        id: tags
+        run: |
+          MAJOR=$(echo "$GITHUB_REF_NAME" | cut -d . -f 1)
+          MINOR=$(echo "$GITHUB_REF_NAME" | cut -d . -f 2)
+          PATCH=$(echo "$GITHUB_REF_NAME" | cut -d . -f 3)
+
+          git tag -f "$MAJOR" "$GITHUB_SHA"
+          git tag -f "$MAJOR.$MINOR" "$GITHUB_SHA"
+          git tag -f "$MAJOR.$MINOR.$PATCH" "$GITHUB_SHA"
+          git push -f -u origin "$MAJOR"
+          git push -f -u origin "$MAJOR.$MINOR"
+          git push -f -u origin "$MAJOR.$MINOR.$PATCH"
+
+          git show-ref --tags | grep "$GITHUB_SHA"
