@@ -29105,7 +29105,7 @@ function metric2line(metric) {
             line += ` ${metric.format},${metric.value}`;
         }
         else {
-            throw Error(`Unsupported Metric format ${metric.format}`);
+            throw Error(`Unsupported Metric format for '${metric.metric}' - ${metric.format}`);
         }
     }
     else
@@ -29141,34 +29141,49 @@ function event2payload(event) {
         return payload;
     }
     else {
-        throw Error(`Unsupported Event type ${event.type}`);
+        throw Error(`Unsupported Event type for '${event.title}' - ${event.type}`);
     }
 }
 async function sendMetrics(url, token, metrics) {
     core.info(`Sending ${metrics.length} metric(s)`);
     const lines = [];
     for (const metric of metrics) {
-        const line = metric2line(metric);
-        core.info(line);
-        lines.push(line);
+        try {
+            const line = metric2line(metric);
+            core.info(line);
+            lines.push(line);
+        }
+        catch (error) {
+            core.setFailed(error.message);
+        }
     }
+    // skip if no valid metrics are present
+    if (lines.length === 0)
+        return;
     const http = getClient(token, 'text/plain');
     const res = await http.post(`${url}/api/v2/metrics/ingest`, lines.join('\n'));
     core.info(await res.readBody());
     if (res.message.statusCode !== 202) {
-        throw Error(`HTTP request failed with status code: ${res.message.statusCode}`);
+        core.setFailed(`HTTP request failed - ${res.message.statusCode}`);
     }
 }
 async function sendEvents(url, token, events) {
     core.info(`Sending ${events.length} event(s)`);
+    let payload = {};
     for (const event of events) {
-        const payload = event2payload(event);
-        core.info(JSON.stringify(payload));
+        try {
+            payload = event2payload(event);
+            core.info(JSON.stringify(payload));
+        }
+        catch (error) {
+            core.setFailed(error.message);
+            continue;
+        }
         const http = getClient(token, 'application/json');
         const res = await http.post(`${url}/api/v2/events/ingest`, JSON.stringify(payload));
         core.info(await res.readBody());
         if (res.message.statusCode !== 201) {
-            throw Error(`HTTP request failed with status code: ${res.message.statusCode})}`);
+            core.setFailed(`HTTP request failed - ${res.message.statusCode}`);
         }
     }
 }

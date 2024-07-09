@@ -57,7 +57,9 @@ describe('dynatrace', () => {
     // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const result = () => dt.metric2line(metric)
     expect(result).toThrow(Error)
-    expect(result).toThrow('Unsupported Metric format bad-format')
+    expect(result).toThrow(
+      "Unsupported Metric format for 'bad.metric' - bad-format"
+    )
   })
 
   it('converts an Event to its payload', async () => {
@@ -105,6 +107,8 @@ describe('dynatrace', () => {
     // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const result = () => dt.event2payload(event)
     expect(result).toThrow(Error)
-    expect(result).toThrow('Unsupported Event type CUSTOM_INVALID')
+    expect(result).toThrow(
+      "Unsupported Event type for 'Bad Event' - CUSTOM_INVALID"
+    )
   })
 })

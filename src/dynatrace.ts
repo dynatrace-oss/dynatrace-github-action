@@ -70,7 +70,9 @@ export function metric2line(metric: Metric): string {
     if (SUPPORTED_METRIC_FORMATS.includes(metric.format)) {
       line += ` ${metric.format},${metric.value}`
     } else {
-      throw Error(`Unsupported Metric format ${metric.format}`)
+      throw Error(
+        `Unsupported Metric format for '${metric.metric}' - ${metric.format}`
+      )
     }
   } else line += ` ${metric.value}`
 
@@ -108,7 +110,7 @@ export function event2payload(event: Event): {
 
     return payload
   } else {
-    throw Error(`Unsupported Event type ${event.type}`)
+    throw Error(`Unsupported Event type for '${event.title}' - ${event.type}`)
   }
 }
 
@@ -121,10 +123,17 @@ export async function sendMetrics(
 
   const lines: string[] = []
   for (const metric of metrics) {
-    const line = metric2line(metric)
-    core.info(line)
-    lines.push(line)
+    try {
+      const line = metric2line(metric)
+      core.info(line)
+      lines.push(line)
+    } catch (error) {
+      core.setFailed((error as Error).message)
+    }
   }
+
+  // skip if no valid metrics are present
+  if (lines.length === 0) return
 
   const http: httpm.HttpClient = getClient(token, 'text/plain')
   const res: httpm.HttpClientResponse = await http.post(
@@ -134,9 +143,7 @@ export async function sendMetrics(
 
   core.info(await res.readBody())
   if (res.message.statusCode !== 202) {
-    throw Error(
-      `HTTP request failed with status code: ${res.message.statusCode}`
-    )
+    core.setFailed(`HTTP request failed - ${res.message.statusCode}`)
   }
 }
 
@@ -147,10 +154,16 @@ export async function sendEvents(
 ): Promise<void> {
   core.info(`Sending ${events.length} event(s)`)
 
+  let payload = {}
   for (const event of events) {
-    const payload = event2payload(event)
+    try {
+      payload = event2payload(event)
+      core.info(JSON.stringify(payload))
+    } catch (error) {
+      core.setFailed((error as Error).message)
+      continue
+    }
 
-    core.info(JSON.stringify(payload))
     const http: httpm.HttpClient = getClient(token, 'application/json')
     const res: httpm.HttpClientResponse = await http.post(
       `${url}/api/v2/events/ingest`,
@@ -159,9 +172,7 @@ export async function sendEvents(
 
     core.info(await res.readBody())
     if (res.message.statusCode !== 201) {
-      throw Error(
-        `HTTP request failed with status code: ${res.message.statusCode})}`
-      )
+      core.setFailed(`HTTP request failed - ${res.message.statusCode}`)
     }
   }
 }
