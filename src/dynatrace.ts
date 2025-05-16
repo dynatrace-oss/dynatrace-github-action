@@ -117,7 +117,8 @@ export function event2payload(event: Event): {
 export async function sendMetrics(
   url: string,
   token: string,
-  metrics: Metric[]
+  metrics: Metric[],
+  retries = 3
 ): Promise<void> {
   core.info(`Sending ${metrics.length} metric(s)`)
 
@@ -135,19 +136,60 @@ export async function sendMetrics(
   // skip if no valid metrics are present
   if (lines.length === 0) return
 
-  const http: httpm.HttpClient = getClient(token, 'text/plain')
-  const res: httpm.HttpClientResponse = await http.post(
-    `${url}/api/v2/metrics/ingest`,
-    lines.join('\n')
-  )
+  // -- send metrics with retry
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const http: httpm.HttpClient = getClient(token, 'text/plain')
+      const res: httpm.HttpClientResponse = await http.post(
+        `${url}/api/v2/metrics/ingest`,
+        lines.join('\n')
+      )
 
-  core.info(await res.readBody())
-  if (res.message.statusCode !== 202) {
-    core.setFailed(`HTTP request failed - ${res.message.statusCode}`)
+      core.info(await res.readBody())
+      if (res.message.statusCode !== 202) {
+        core.warning(`HTTP request failed - ${res.message.statusCode}`)
+      }
+
+      return // Exit if successful
+    } catch (error) {
+      if (attempt === retries) {
+        core.setFailed(
+          `Failed after ${retries} attempts: ${(error as Error).message}`
+        )
+        throw error
+      }
+      core.warning(
+        `Attempt ${attempt} failed: ${(error as Error).message}. Retrying...`
+      )
+    }
   }
 }
 
 export async function sendEvents(
+  url: string,
+  token: string,
+  events: Event[],
+  retries = 3
+): Promise<void> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await sendEventsInternal(url, token, events)
+      return // Exit if successful
+    } catch (error) {
+      if (attempt === retries) {
+        core.setFailed(
+          `Failed after ${retries} attempts: ${(error as Error).message}`
+        )
+        throw error
+      }
+      core.warning(
+        `Attempt ${attempt} failed: ${(error as Error).message}. Retrying...`
+      )
+    }
+  }
+}
+
+async function sendEventsInternal(
   url: string,
   token: string,
   events: Event[]
@@ -172,7 +214,7 @@ export async function sendEvents(
 
     core.info(await res.readBody())
     if (res.message.statusCode !== 201) {
-      core.setFailed(`HTTP request failed - ${res.message.statusCode}`)
+      core.warning(`HTTP request failed - ${res.message.statusCode}`)
     }
   }
 }
