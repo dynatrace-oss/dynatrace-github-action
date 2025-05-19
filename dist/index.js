@@ -29144,7 +29144,7 @@ function event2payload(event) {
         throw Error(`Unsupported Event type for '${event.title}' - ${event.type}`);
     }
 }
-async function sendMetrics(url, token, metrics) {
+async function sendMetrics(url, token, metrics, retries = 3) {
     core.info(`Sending ${metrics.length} metric(s)`);
     const lines = [];
     for (const metric of metrics) {
@@ -29160,14 +29160,42 @@ async function sendMetrics(url, token, metrics) {
     // skip if no valid metrics are present
     if (lines.length === 0)
         return;
-    const http = getClient(token, 'text/plain');
-    const res = await http.post(`${url}/api/v2/metrics/ingest`, lines.join('\n'));
-    core.info(await res.readBody());
-    if (res.message.statusCode !== 202) {
-        core.setFailed(`HTTP request failed - ${res.message.statusCode}`);
+    // -- send metrics with retry
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            const http = getClient(token, 'text/plain');
+            const res = await http.post(`${url}/api/v2/metrics/ingest`, lines.join('\n'));
+            core.info(await res.readBody());
+            if (res.message.statusCode !== 202) {
+                core.warning(`HTTP request failed - ${res.message.statusCode}`);
+            }
+            return; // Exit if successful
+        }
+        catch (error) {
+            if (attempt === retries) {
+                core.setFailed(`Failed after ${retries} attempts: ${error.message}`);
+                throw error;
+            }
+            core.warning(`Attempt ${attempt} failed: ${error.message}. Retrying...`);
+        }
     }
 }
-async function sendEvents(url, token, events) {
+async function sendEvents(url, token, events, retries = 3) {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            await sendEventsInternal(url, token, events);
+            return; // Exit if successful
+        }
+        catch (error) {
+            if (attempt === retries) {
+                core.setFailed(`Failed after ${retries} attempts: ${error.message}`);
+                throw error;
+            }
+            core.warning(`Attempt ${attempt} failed: ${error.message}. Retrying...`);
+        }
+    }
+}
+async function sendEventsInternal(url, token, events) {
     core.info(`Sending ${events.length} event(s)`);
     let payload = {};
     for (const event of events) {
@@ -29183,7 +29211,7 @@ async function sendEvents(url, token, events) {
         const res = await http.post(`${url}/api/v2/events/ingest`, JSON.stringify(payload));
         core.info(await res.readBody());
         if (res.message.statusCode !== 201) {
-            core.setFailed(`HTTP request failed - ${res.message.statusCode}`);
+            core.warning(`HTTP request failed - ${res.message.statusCode}`);
         }
     }
 }
