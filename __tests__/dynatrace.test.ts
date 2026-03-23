@@ -111,4 +111,30 @@ describe('dynatrace', () => {
       "Unsupported Event type for 'Bad Event' - CUSTOM_INVALID"
     )
   })
+
+  it('accepts successful event ingest responses', async () => {
+    const response =
+      '{"reportCount":1,"eventIngestResults":[{"correlationId":"bc7e2e3ed951aa6c","status":"OK"}]}'
+
+    expect(() => dt.validateEventIngestResponse(response)).not.toThrow()
+  })
+
+  it('fails when event ingest response has no injected events', async () => {
+    const response = '{"reportCount":0,"eventIngestResults":[]}'
+
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+    const result = () => dt.validateEventIngestResponse(response)
+    expect(result).toThrow(Error)
+    expect(result).toThrow(
+      'Dynatrace event ingest accepted the request but did not ingest any events'
+    )
+  })
+
+  it('fails when event ingest response body is not JSON', async () => {
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+    const result = () => dt.validateEventIngestResponse('ok')
+
+    expect(result).toThrow(Error)
+    expect(result).toThrow('Dynatrace event ingest returned invalid JSON')
+  })
 })

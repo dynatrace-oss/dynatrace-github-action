@@ -29057,6 +29057,7 @@ exports.safeKey = safeKey;
 exports.safeValue = safeValue;
 exports.metric2line = metric2line;
 exports.event2payload = event2payload;
+exports.validateEventIngestResponse = validateEventIngestResponse;
 exports.sendMetrics = sendMetrics;
 exports.sendEvents = sendEvents;
 /*
@@ -29144,6 +29145,21 @@ function event2payload(event) {
         throw Error(`Unsupported Event type for '${event.title}' - ${event.type}`);
     }
 }
+function validateEventIngestResponse(body) {
+    let parsedResponse;
+    try {
+        parsedResponse = JSON.parse(body);
+    }
+    catch (error) {
+        throw Error(`Dynatrace event ingest returned invalid JSON: ${error.message}`);
+    }
+    const reportCount = parsedResponse.reportCount ?? 0;
+    const eventIngestResults = parsedResponse.eventIngestResults ?? [];
+    const successfulIngestions = eventIngestResults.filter(result => result.status === 'OK');
+    if (reportCount <= 0 || successfulIngestions.length === 0) {
+        throw Error(`Dynatrace event ingest accepted the request but did not ingest any events: ${body}`);
+    }
+}
 async function sendMetrics(url, token, metrics, retries = 3) {
     core.info(`Sending ${metrics.length} metric(s)`);
     const lines = [];
@@ -29209,10 +29225,12 @@ async function sendEventsInternal(url, token, events) {
         }
         const http = getClient(token, 'application/json');
         const res = await http.post(`${url}/api/v2/events/ingest`, JSON.stringify(payload));
-        core.info(await res.readBody());
+        const responseBody = await res.readBody();
+        core.info(responseBody);
         if (res.message.statusCode !== 201) {
-            core.warning(`HTTP request failed - ${res.message.statusCode}`);
+            throw Error(`HTTP request failed - ${res.message.statusCode}`);
         }
+        validateEventIngestResponse(responseBody);
     }
 }
 function getClient(token, content) {

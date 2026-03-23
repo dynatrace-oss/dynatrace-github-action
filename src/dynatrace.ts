@@ -44,6 +44,16 @@ export interface Event {
   properties?: Properties
 }
 
+interface EventIngestResult {
+  correlationId?: string
+  status?: string
+}
+
+interface EventIngestResponse {
+  reportCount?: number
+  eventIngestResults?: EventIngestResult[]
+}
+
 export function safeKey(key: string): string {
   return key.toLowerCase().replace(/[^.0-9a-z_-]/gi, '_')
 }
@@ -111,6 +121,30 @@ export function event2payload(event: Event): {
     return payload
   } else {
     throw Error(`Unsupported Event type for '${event.title}' - ${event.type}`)
+  }
+}
+
+export function validateEventIngestResponse(body: string): void {
+  let parsedResponse: EventIngestResponse
+
+  try {
+    parsedResponse = JSON.parse(body) as EventIngestResponse
+  } catch (error) {
+    throw Error(
+      `Dynatrace event ingest returned invalid JSON: ${(error as Error).message}`
+    )
+  }
+
+  const reportCount = parsedResponse.reportCount ?? 0
+  const eventIngestResults = parsedResponse.eventIngestResults ?? []
+  const successfulIngestions = eventIngestResults.filter(
+    result => result.status === 'OK'
+  )
+
+  if (reportCount <= 0 || successfulIngestions.length === 0) {
+    throw Error(
+      `Dynatrace event ingest accepted the request but did not ingest any events: ${body}`
+    )
   }
 }
 
@@ -212,10 +246,14 @@ async function sendEventsInternal(
       JSON.stringify(payload)
     )
 
-    core.info(await res.readBody())
+    const responseBody = await res.readBody()
+    core.info(responseBody)
+
     if (res.message.statusCode !== 201) {
-      core.warning(`HTTP request failed - ${res.message.statusCode}`)
+      throw Error(`HTTP request failed - ${res.message.statusCode}`)
     }
+
+    validateEventIngestResponse(responseBody)
   }
 }
 
