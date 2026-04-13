@@ -54,7 +54,6 @@ describe('dynatrace', () => {
       value: '42.0'
     }
 
-    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const result = () => dt.metric2line(metric)
     expect(result).toThrow(Error)
     expect(result).toThrow(
@@ -104,7 +103,6 @@ describe('dynatrace', () => {
       type: 'CUSTOM_INVALID'
     }
 
-    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const result = () => dt.event2payload(event)
     expect(result).toThrow(Error)
     expect(result).toThrow(
@@ -122,7 +120,6 @@ describe('dynatrace', () => {
   it('fails when event ingest response has no injected events', async () => {
     const response = '{"reportCount":0,"eventIngestResults":[]}'
 
-    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const result = () => dt.validateEventIngestResponse(response)
     expect(result).toThrow(Error)
     expect(result).toThrow(
@@ -131,7 +128,6 @@ describe('dynatrace', () => {
   })
 
   it('fails when event ingest response body is not JSON', async () => {
-    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const result = () => dt.validateEventIngestResponse('ok')
 
     expect(result).toThrow(Error)

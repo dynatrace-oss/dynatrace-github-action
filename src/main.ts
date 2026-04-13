@@ -10,8 +10,8 @@ Unless required by applicable law or agreed to in writing, software distributed 
 import * as core from '@actions/core'
 import * as yaml from 'js-yaml'
 
-import { Metric, Event } from './dynatrace'
-import * as dt from './dynatrace'
+import { Metric, Event } from './dynatrace.js'
+import * as dt from './dynatrace.js'
 
 export async function run(): Promise<void> {
   try {

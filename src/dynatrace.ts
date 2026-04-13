@@ -95,7 +95,7 @@ export function metric2line(metric: Metric): string {
 export function event2payload(event: Event): {
   [key: string]: number | string | Properties
 } {
-  let payload: { [key: string]: number | string | Properties } = {}
+  let payload: { [key: string]: number | string | Properties }
   if (SUPPORTED_EVENT_TYPES.includes(event.type)) {
     // start with type and title
     payload = {
@@ -131,14 +131,15 @@ export function validateEventIngestResponse(body: string): void {
     parsedResponse = JSON.parse(body) as EventIngestResponse
   } catch (error) {
     throw Error(
-      `Dynatrace event ingest returned invalid JSON: ${(error as Error).message}`
+      `Dynatrace event ingest returned invalid JSON: ${(error as Error).message}`,
+      { cause: error }
     )
   }
 
   const reportCount = parsedResponse.reportCount ?? 0
   const eventIngestResults = parsedResponse.eventIngestResults ?? []
   const successfulIngestions = eventIngestResults.filter(
-    result => result.status === 'OK'
+    (result) => result.status === 'OK'
   )
 
   if (reportCount <= 0 || successfulIngestions.length === 0) {
@@ -230,7 +231,7 @@ async function sendEventsInternal(
 ): Promise<void> {
   core.info(`Sending ${events.length} event(s)`)
 
-  let payload = {}
+  let payload: { [key: string]: number | string | Properties }
   for (const event of events) {
     try {
       payload = event2payload(event)

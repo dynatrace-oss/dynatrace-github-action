@@ -19,19 +19,18 @@ This repository was bootstrapped using the
 
 ---
 
-- [Dynatrace GitHub Action](#dynatrace-github-action)
-  - [Tags](#tags)
-  - [Usage](#usage)
-    - [Inputs](#inputs)
-    - [API Token](#api-token)
-    - [Metric Formats](#metric-formats)
-    - [Event Types](#event-types)
-  - [Examples](#examples)
-    - [Sending a Metric](#sending-a-metric)
-    - [Sending an Event](#sending-an-event)
-  - [Local Development](#local-development)
-  - [Contributing](#contributing)
-  - [License](#license)
+- [Tags](#tags)
+- [Usage](#usage)
+  - [Inputs](#inputs)
+  - [API Token](#api-token)
+  - [Metric Formats](#metric-formats)
+  - [Event Types](#event-types)
+- [Examples](#examples)
+  - [Sending a Metric](#sending-a-metric)
+  - [Sending an Event](#sending-an-event)
+- [Local Development](#local-development)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Tags
 
@@ -112,7 +111,7 @@ this example you could get all metrics for single repository using the
 
 ```yaml
 - name: Send metrics to Dynatrace
-  uses: dynatrace-oss/dynatrace-github-action@v9
+  uses: dynatrace-oss/dynatrace-github-action@v10
   with:
     url: ${{ secrets.DT_URL }}
     token: ${{ secrets.DT_TOKEN }}
@@ -142,7 +141,7 @@ API for help creating selectors. Below are a few examples:
 
 ```yaml
 - name: Send events to Dynatrace
-  uses: dynatrace-oss/dynatrace-github-action@v9
+  uses: dynatrace-oss/dynatrace-github-action@v10
   with:
     url: ${{ secrets.DT_URL }}
     token: ${{ secrets.DT_TOKEN }}

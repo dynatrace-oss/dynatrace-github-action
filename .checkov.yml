@@ -1,0 +1,5 @@
+compact: true
+quiet: true
+skip-path:
+  - coverage
+  - node_modules

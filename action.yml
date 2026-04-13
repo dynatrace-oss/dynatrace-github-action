@@ -16,8 +16,8 @@ inputs:
     description: Inline YAML list of Events to send
     default: '[]'
 runs:
-  using: node20
+  using: node24
   main: dist/index.js
 branding:
   icon: bar-chart-2
-  color: black
+  color: gray-dark
