@@ -1,7 +1,7 @@
 {
   "name": "dynatrace-github-action",
   "description": "An action that pushes metrics and events from GitHub workflows to a Dynatrace monitoring environment",
-  "version": "0.0.0",
+  "version": "9.3.0",
   "author": "Dynatrace LLC",
   "private": true,
   "homepage": "https://github.com/dynatrace-oss/dynatrace-github-action",
@@ -23,7 +23,7 @@
     ".": "./dist/index.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "bundle": "npm run format:write && npm run package",

@@ -26,6 +26,11 @@ const SUPPORTED_EVENT_TYPES: string[] = [
 export type Properties = { [key: string]: string }
 export type Dimensions = { [key: string]: string }
 
+export interface SdlcEvent {
+  'event.id': string | number
+  [key: string]: unknown
+}
+
 export interface Metric {
   metric: string
   value: string
@@ -59,7 +64,7 @@ export function safeKey(key: string): string {
 }
 
 export function safeValue(value: string): string {
-  return value
+  return value.replace(/[\r\n]/g, '')
 }
 
 export function metric2line(metric: Metric): string {
@@ -254,6 +259,71 @@ async function sendEventsInternal(
     }
 
     validateEventIngestResponse(responseBody)
+  }
+}
+
+export function validateSdlcEvent(event: SdlcEvent): void {
+  const id = event['event.id']
+  if (id === undefined || id === null || id === '') {
+    throw Error(`SDLC event is missing required field 'event.id'`)
+  }
+}
+
+export async function sendSdlcEvents(
+  url: string,
+  token: string,
+  sdlcEvents: SdlcEvent[],
+  retries = 3
+): Promise<void> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await sendSdlcEventsInternal(url, token, sdlcEvents)
+      return
+    } catch (error) {
+      if (attempt === retries) {
+        core.setFailed(
+          `Failed after ${retries} attempts: ${(error as Error).message}`
+        )
+        throw error
+      }
+      core.warning(
+        `Attempt ${attempt} failed: ${(error as Error).message}. Retrying...`
+      )
+    }
+  }
+}
+
+async function sendSdlcEventsInternal(
+  url: string,
+  token: string,
+  sdlcEvents: SdlcEvent[]
+): Promise<void> {
+  core.info(`Sending ${sdlcEvents.length} SDLC event(s)`)
+
+  const validEvents: SdlcEvent[] = []
+  for (const event of sdlcEvents) {
+    try {
+      validateSdlcEvent(event)
+      core.info(JSON.stringify(event))
+      validEvents.push(event)
+    } catch (error) {
+      core.setFailed((error as Error).message)
+    }
+  }
+
+  if (validEvents.length === 0) return
+
+  const http: httpm.HttpClient = getClient(token, 'application/json')
+  const res: httpm.HttpClientResponse = await http.post(
+    `${url}/platform/ingest/v1/events.sdlc`,
+    JSON.stringify(validEvents)
+  )
+
+  const responseBody = await res.readBody()
+  if (responseBody) core.info(responseBody)
+
+  if (res.message.statusCode !== 202) {
+    throw Error(`HTTP request failed - ${res.message.statusCode}`)
   }
 }
 

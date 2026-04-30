@@ -29060,6 +29060,8 @@ exports.event2payload = event2payload;
 exports.validateEventIngestResponse = validateEventIngestResponse;
 exports.sendMetrics = sendMetrics;
 exports.sendEvents = sendEvents;
+exports.validateSdlcEvent = validateSdlcEvent;
+exports.sendSdlcEvents = sendSdlcEvents;
 /*
 Copyright 2024 Dynatrace LLC
 
@@ -29087,7 +29089,7 @@ function safeKey(key) {
     return key.toLowerCase().replace(/[^.0-9a-z_-]/gi, '_');
 }
 function safeValue(value) {
-    return value;
+    return value.replace(/[\r\n]/g, '');
 }
 function metric2line(metric) {
     // -- key
@@ -29233,6 +29235,51 @@ async function sendEventsInternal(url, token, events) {
         validateEventIngestResponse(responseBody);
     }
 }
+function validateSdlcEvent(event) {
+    const id = event['event.id'];
+    if (id === undefined || id === null || id === '') {
+        throw Error(`SDLC event is missing required field 'event.id'`);
+    }
+}
+async function sendSdlcEvents(url, token, sdlcEvents, retries = 3) {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            await sendSdlcEventsInternal(url, token, sdlcEvents);
+            return;
+        }
+        catch (error) {
+            if (attempt === retries) {
+                core.setFailed(`Failed after ${retries} attempts: ${error.message}`);
+                throw error;
+            }
+            core.warning(`Attempt ${attempt} failed: ${error.message}. Retrying...`);
+        }
+    }
+}
+async function sendSdlcEventsInternal(url, token, sdlcEvents) {
+    core.info(`Sending ${sdlcEvents.length} SDLC event(s)`);
+    const validEvents = [];
+    for (const event of sdlcEvents) {
+        try {
+            validateSdlcEvent(event);
+            core.info(JSON.stringify(event));
+            validEvents.push(event);
+        }
+        catch (error) {
+            core.setFailed(error.message);
+        }
+    }
+    if (validEvents.length === 0)
+        return;
+    const http = getClient(token, 'application/json');
+    const res = await http.post(`${url}/platform/ingest/v1/events.sdlc`, JSON.stringify(validEvents));
+    const responseBody = await res.readBody();
+    if (responseBody)
+        core.info(responseBody);
+    if (res.message.statusCode !== 202) {
+        throw Error(`HTTP request failed - ${res.message.statusCode}`);
+    }
+}
 function getClient(token, content) {
     return new httpm.HttpClient('dt-http-client', [], {
         headers: {
@@ -29290,19 +29337,35 @@ async function run() {
     try {
         const url = core.getInput('url').replace(/\/$/, '');
         const token = core.getInput('token');
+        if (!url) {
+            core.setFailed('Input "url" is required but was not provided.');
+            return;
+        }
+        if (!token) {
+            core.setFailed('Input "token" is required but was not provided.');
+            return;
+        }
+        core.setSecret(token);
         // -- metrics
         const mStr = core.getInput('metrics');
         core.info(mStr);
-        if (mStr.length > 5) {
-            const metrics = yaml.load(mStr);
-            dt.sendMetrics(url, token, metrics);
+        const metrics = yaml.load(mStr);
+        if (Array.isArray(metrics) && metrics.length > 0) {
+            await dt.sendMetrics(url, token, metrics);
         }
         // -- events
         const eStr = core.getInput('events');
         core.info(eStr);
-        if (eStr.length > 5) {
-            const events = yaml.load(eStr);
-            dt.sendEvents(url, token, events);
+        const events = yaml.load(eStr);
+        if (Array.isArray(events) && events.length > 0) {
+            await dt.sendEvents(url, token, events);
+        }
+        // -- sdlc events
+        const sdlcStr = core.getInput('sdlc-events');
+        core.info(sdlcStr);
+        const sdlcEvents = yaml.load(sdlcStr);
+        if (Array.isArray(sdlcEvents) && sdlcEvents.length > 0) {
+            await dt.sendSdlcEvents(url, token, sdlcEvents);
         }
     }
     catch (error) {

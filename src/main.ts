@@ -10,7 +10,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 import * as core from '@actions/core'
 import * as yaml from 'js-yaml'
 
-import { Metric, Event } from './dynatrace'
+import { Metric, Event, SdlcEvent } from './dynatrace'
 import * as dt from './dynatrace'
 
 export async function run(): Promise<void> {
@@ -18,20 +18,39 @@ export async function run(): Promise<void> {
     const url: string = core.getInput('url').replace(/\/$/, '')
     const token: string = core.getInput('token')
 
+    if (!url) {
+      core.setFailed('Input "url" is required but was not provided.')
+      return
+    }
+    if (!token) {
+      core.setFailed('Input "token" is required but was not provided.')
+      return
+    }
+
+    core.setSecret(token)
+
     // -- metrics
     const mStr = core.getInput('metrics')
     core.info(mStr)
-    if (mStr.length > 5) {
-      const metrics = yaml.load(mStr) as Metric[]
-      dt.sendMetrics(url, token, metrics)
+    const metrics = yaml.load(mStr) as Metric[]
+    if (Array.isArray(metrics) && metrics.length > 0) {
+      await dt.sendMetrics(url, token, metrics)
     }
 
     // -- events
     const eStr = core.getInput('events')
     core.info(eStr)
-    if (eStr.length > 5) {
-      const events = yaml.load(eStr) as Event[]
-      dt.sendEvents(url, token, events)
+    const events = yaml.load(eStr) as Event[]
+    if (Array.isArray(events) && events.length > 0) {
+      await dt.sendEvents(url, token, events)
+    }
+
+    // -- sdlc events
+    const sdlcStr = core.getInput('sdlc-events')
+    core.info(sdlcStr)
+    const sdlcEvents = yaml.load(sdlcStr) as SdlcEvent[]
+    if (Array.isArray(sdlcEvents) && sdlcEvents.length > 0) {
+      await dt.sendSdlcEvents(url, token, sdlcEvents)
     }
   } catch (error) {
     // Fail the workflow run if an error occurs

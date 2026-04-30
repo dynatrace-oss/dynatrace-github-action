@@ -26,9 +26,11 @@ This repository was bootstrapped using the
     - [API Token](#api-token)
     - [Metric Formats](#metric-formats)
     - [Event Types](#event-types)
+    - [SDLC Events](#sdlc-events)
   - [Examples](#examples)
     - [Sending a Metric](#sending-a-metric)
     - [Sending an Event](#sending-an-event)
+    - [Sending an SDLC Event](#sending-an-sdlc-event)
   - [Local Development](#local-development)
   - [Contributing](#contributing)
   - [License](#license)
@@ -53,25 +55,28 @@ action.
 
 ### Inputs
 
-| Name      | Type   | Description                         | Default    |
-| --------- | ------ | ----------------------------------- | ---------- |
-| `url`     | String | Dynatrace URL [1]                   | _required_ |
-| `token`   | String | Dynatrace API-Token                 | _required_ |
-| `metrics` | YAML   | Inline YAML list of Metrics to send | `[]`       |
-| `events`  | YAML   | Inline YAML list of Events to send  | `[]`       |
+| Name          | Type   | Description                                              | Default    |
+| ------------- | ------ | -------------------------------------------------------- | ---------- |
+| `url`         | String | Dynatrace URL [1]                                        | _required_ |
+| `token`       | String | Dynatrace API-Token                                      | _required_ |
+| `metrics`     | YAML   | Inline YAML list of Metrics to send                      | `[]`       |
+| `events`      | YAML   | Inline YAML list of Events to send                       | `[]`       |
+| `sdlc-events` | YAML   | Inline YAML list of SDLC Events to send via OpenPipeline | `[]`       |
 
 > 1. `url` should be the LIVE Dynatrace domain, eg:
 >    `https://{your-environment-id}.live.dynatrace.com`
 
 ### API Token
 
-Your `token` must be Dynatrace APIv2 Token with the following permissions
+Your `token` must be a Dynatrace API token with the following permissions
 granted to it:
 
-- Read Metrics
-- Read Events
-- Ingest Metrics
-- Ingest Events
+- Read Metrics (`metrics.read`)
+- Read Events (`events.read`)
+- Ingest Metrics (`metrics.ingest`)
+- Ingest Events (`events.ingest`)
+- Ingest SDLC Events (`openpipeline.events_sdlc`) — required only when using
+  `sdlc-events`
 
 ### Metric Formats
 
@@ -94,6 +99,17 @@ Event types must be one of the following:
 - `MARKED_FOR_TERMINATION`
 - `PERFORMANCE_EVENT`
 - `RESOURCE_CONTENTION_EVENT`
+
+### SDLC Events
+
+SDLC (Software Development Lifecycle) events are ingested via the Dynatrace
+[OpenPipeline Ingest API](https://docs.dynatrace.com/docs/platform/openpipeline/reference/openpipeline-ingest-api/sdlc-events/events-sdlc-builtin)
+at the `/platform/ingest/v1/events.sdlc` endpoint.
+
+Each SDLC event must include the `event.id` field. Any additional properties are
+forwarded as-is to the OpenPipeline.
+
+The `token` must have the `openpipeline.events_sdlc` scope.
 
 ## Examples
 
@@ -157,6 +173,27 @@ API for help creating selectors. Below are a few examples:
           github.ref: "${{ github.ref }}"
           github.event_name: "${{ github.event_name }}"
           github.actor: "${{ github.actor }}"
+```
+
+### Sending an SDLC Event
+
+The following sends a deployment SDLC event to the Dynatrace OpenPipeline. Any
+additional properties beyond `event.id` are forwarded to the pipeline as-is.
+
+```yaml
+- name: Send SDLC event to Dynatrace
+  uses: dynatrace-oss/dynatrace-github-action@v9
+  with:
+    url: ${{ secrets.DT_URL }}
+    token: ${{ secrets.DT_TOKEN }}
+    sdlc-events: |
+      - event.id: "${{ github.run_id }}"
+        event.type: deployment
+        event.category: DEPLOY
+        git.repository: "${{ github.repository }}"
+        git.commit: "${{ github.sha }}"
+        git.ref: "${{ github.ref }}"
+        actor: "${{ github.actor }}"
 ```
 
 ## Local Development

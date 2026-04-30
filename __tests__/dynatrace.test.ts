@@ -7,8 +7,13 @@ http://www.apache.org/licenses/LICENSE-2.0
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 */
 
-import { Metric, Event } from '../src/dynatrace'
+import * as core from '@actions/core'
+import * as httpm from '@actions/http-client'
+import { Metric, Event, SdlcEvent } from '../src/dynatrace'
 import * as dt from '../src/dynatrace'
+
+jest.mock('@actions/core')
+jest.mock('@actions/http-client')
 
 describe('dynatrace', () => {
   it('returns a safe key', async () => {
@@ -17,6 +22,10 @@ describe('dynatrace', () => {
 
   it('returns a safe value', async () => {
     expect(dt.safeValue('Some test value!')).toEqual('Some test value!')
+  })
+
+  it('strips newlines from values', async () => {
+    expect(dt.safeValue('line1\nline2\r')).toEqual('line1line2')
   })
 
   it('converts a Metric to line protocol', async () => {
@@ -136,5 +145,235 @@ describe('dynatrace', () => {
 
     expect(result).toThrow(Error)
     expect(result).toThrow('Dynatrace event ingest returned invalid JSON')
+  })
+
+  describe('sendMetrics', () => {
+    const mockPost = jest.fn()
+    const mockReadBody = jest.fn()
+    const MockHttpClient = httpm.HttpClient as unknown as jest.Mock
+
+    beforeEach(() => {
+      MockHttpClient.mockImplementation(() => ({
+        post: mockPost
+      }))
+      mockReadBody.mockResolvedValue('{"linesOk":1}')
+      mockPost.mockResolvedValue({
+        message: { statusCode: 202 },
+        readBody: mockReadBody
+      })
+    })
+
+    it('sends metrics via HTTP POST', async () => {
+      const metrics: Metric[] = [{ metric: 'test.metric', value: '1.0' }]
+      await dt.sendMetrics(
+        'https://example.live.dynatrace.com',
+        'mytoken',
+        metrics
+      )
+      expect(mockPost).toHaveBeenCalledWith(
+        'https://example.live.dynatrace.com/api/v2/metrics/ingest',
+        'test.metric 1.0'
+      )
+    })
+
+    it('warns on non-202 HTTP response', async () => {
+      mockPost.mockResolvedValue({
+        message: { statusCode: 400 },
+        readBody: mockReadBody
+      })
+      const metrics: Metric[] = [{ metric: 'test.metric', value: '1.0' }]
+      await dt.sendMetrics(
+        'https://example.live.dynatrace.com',
+        'mytoken',
+        metrics
+      )
+      expect(jest.mocked(core.warning)).toHaveBeenCalledWith(
+        expect.stringContaining('400')
+      )
+    })
+
+    it('retries on network error and fails after max retries', async () => {
+      mockPost.mockRejectedValue(new Error('network failure'))
+      const metrics: Metric[] = [{ metric: 'test.metric', value: '1.0' }]
+      await expect(
+        dt.sendMetrics(
+          'https://example.live.dynatrace.com',
+          'mytoken',
+          metrics,
+          2
+        )
+      ).rejects.toThrow('network failure')
+      expect(jest.mocked(core.setFailed)).toHaveBeenCalledWith(
+        expect.stringContaining('Failed after 2 attempts')
+      )
+    })
+
+    it('skips HTTP call when all metrics fail conversion', async () => {
+      const metrics: Metric[] = [
+        { metric: 'bad.metric', format: 'invalid', value: '1.0' }
+      ]
+      await dt.sendMetrics(
+        'https://example.live.dynatrace.com',
+        'mytoken',
+        metrics
+      )
+      expect(mockPost).not.toHaveBeenCalled()
+      expect(jest.mocked(core.setFailed)).toHaveBeenCalled()
+    })
+  })
+
+  describe('validateSdlcEvent', () => {
+    it('accepts an event with a string event.id', () => {
+      const event: SdlcEvent = { 'event.id': 'deploy-123' }
+      expect(() => dt.validateSdlcEvent(event)).not.toThrow()
+    })
+
+    it('accepts an event with a numeric event.id', () => {
+      const event: SdlcEvent = { 'event.id': 42 }
+      expect(() => dt.validateSdlcEvent(event)).not.toThrow()
+    })
+
+    it('fails when event.id is missing', () => {
+      const event = {} as SdlcEvent
+      expect(() => dt.validateSdlcEvent(event)).toThrow(
+        "SDLC event is missing required field 'event.id'"
+      )
+    })
+
+    it('fails when event.id is an empty string', () => {
+      const event: SdlcEvent = { 'event.id': '' }
+      expect(() => dt.validateSdlcEvent(event)).toThrow(
+        "SDLC event is missing required field 'event.id'"
+      )
+    })
+  })
+
+  describe('sendSdlcEvents', () => {
+    const mockPost = jest.fn()
+    const mockReadBody = jest.fn()
+    const MockHttpClient = httpm.HttpClient as unknown as jest.Mock
+
+    beforeEach(() => {
+      MockHttpClient.mockImplementation(() => ({
+        post: mockPost
+      }))
+      mockReadBody.mockResolvedValue('')
+      mockPost.mockResolvedValue({
+        message: { statusCode: 202 },
+        readBody: mockReadBody
+      })
+    })
+
+    it('sends SDLC events via HTTP POST to the OpenPipeline endpoint', async () => {
+      const events: SdlcEvent[] = [
+        { 'event.id': 'deploy-1', 'event.type': 'deployment' }
+      ]
+      await dt.sendSdlcEvents(
+        'https://example.live.dynatrace.com',
+        'mytoken',
+        events
+      )
+      expect(mockPost).toHaveBeenCalledWith(
+        'https://example.live.dynatrace.com/platform/ingest/v1/events.sdlc',
+        JSON.stringify(events)
+      )
+    })
+
+    it('sends multiple SDLC events as a JSON array', async () => {
+      const events: SdlcEvent[] = [
+        { 'event.id': 'deploy-1' },
+        { 'event.id': 'deploy-2', custom: 'value' }
+      ]
+      await dt.sendSdlcEvents(
+        'https://example.live.dynatrace.com',
+        'mytoken',
+        events
+      )
+      expect(mockPost).toHaveBeenCalledWith(
+        expect.any(String),
+        JSON.stringify(events)
+      )
+    })
+
+    it('retries on non-202 HTTP response and fails after max retries', async () => {
+      mockPost.mockResolvedValue({
+        message: { statusCode: 400 },
+        readBody: mockReadBody
+      })
+      const events: SdlcEvent[] = [{ 'event.id': 'deploy-1' }]
+      await expect(
+        dt.sendSdlcEvents(
+          'https://example.live.dynatrace.com',
+          'mytoken',
+          events,
+          2
+        )
+      ).rejects.toThrow('HTTP request failed - 400')
+      expect(jest.mocked(core.setFailed)).toHaveBeenCalledWith(
+        expect.stringContaining('Failed after 2 attempts')
+      )
+    })
+
+    it('skips HTTP call when all SDLC events fail validation', async () => {
+      const events = [{ 'event.id': '' }] as SdlcEvent[]
+      await dt.sendSdlcEvents(
+        'https://example.live.dynatrace.com',
+        'mytoken',
+        events
+      )
+      expect(mockPost).not.toHaveBeenCalled()
+      expect(jest.mocked(core.setFailed)).toHaveBeenCalled()
+    })
+  })
+
+  describe('sendEvents', () => {
+    const mockPost = jest.fn()
+    const mockReadBody = jest.fn()
+    const MockHttpClient = httpm.HttpClient as unknown as jest.Mock
+
+    beforeEach(() => {
+      MockHttpClient.mockImplementation(() => ({
+        post: mockPost
+      }))
+      mockReadBody.mockResolvedValue(
+        '{"reportCount":1,"eventIngestResults":[{"correlationId":"abc","status":"OK"}]}'
+      )
+      mockPost.mockResolvedValue({
+        message: { statusCode: 201 },
+        readBody: mockReadBody
+      })
+    })
+
+    it('sends events via HTTP POST', async () => {
+      const events: Event[] = [{ title: 'Test Event', type: 'CUSTOM_INFO' }]
+      await dt.sendEvents(
+        'https://example.live.dynatrace.com',
+        'mytoken',
+        events
+      )
+      expect(mockPost).toHaveBeenCalledWith(
+        'https://example.live.dynatrace.com/api/v2/events/ingest',
+        expect.stringContaining('"CUSTOM_INFO"')
+      )
+    })
+
+    it('retries on non-201 HTTP response and fails after max retries', async () => {
+      mockPost.mockResolvedValue({
+        message: { statusCode: 400 },
+        readBody: mockReadBody
+      })
+      const events: Event[] = [{ title: 'Test Event', type: 'CUSTOM_INFO' }]
+      await expect(
+        dt.sendEvents(
+          'https://example.live.dynatrace.com',
+          'mytoken',
+          events,
+          2
+        )
+      ).rejects.toThrow('HTTP request failed - 400')
+      expect(jest.mocked(core.setFailed)).toHaveBeenCalledWith(
+        expect.stringContaining('Failed after 2 attempts')
+      )
+    })
   })
 })
