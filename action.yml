@@ -19,7 +19,7 @@ inputs:
     description: Inline YAML list of SDLC Events to send via OpenPipeline
     default: '[]'
 runs:
-  using: node22
+  using: node24
   main: dist/index.js
 branding:
   icon: bar-chart-2

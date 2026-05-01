@@ -1,7 +1,7 @@
 {
   "name": "dynatrace-github-action",
   "description": "An action that pushes metrics and events from GitHub workflows to a Dynatrace monitoring environment",
-  "version": "9.3.0",
+  "version": "9.4.0",
   "author": "Dynatrace LLC",
   "private": true,
   "homepage": "https://github.com/dynatrace-oss/dynatrace-github-action",
@@ -23,7 +23,7 @@
     ".": "./dist/index.js"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "scripts": {
     "bundle": "npm run format:write && npm run package",
@@ -76,7 +76,7 @@
   "devDependencies": {
     "@jest/globals": "^29.7.0",
     "@types/jest": "^29.5.12",
-    "@types/node": "^20.12.4",
+    "@types/node": "^24.0.0",
     "@typescript-eslint/eslint-plugin": "^7.5.0",
     "@typescript-eslint/parser": "^7.5.0",
     "@vercel/ncc": "^0.38.1",
