@@ -326,14 +326,265 @@ describe('dynatrace', () => {
     })
   })
 
+  describe('toGrailUrl', () => {
+    it('rewrites the public SaaS live domain to the apps domain', () => {
+      expect(dt.toGrailUrl('https://abc12345.live.dynatrace.com')).toEqual(
+        'https://abc12345.apps.dynatrace.com'
+      )
+    })
+
+    it('inserts the apps segment for internal dynatracelabs domains', () => {
+      expect(dt.toGrailUrl('https://abc12345.dev.dynatracelabs.com')).toEqual(
+        'https://abc12345.dev.apps.dynatracelabs.com'
+      )
+    })
+
+    it('leaves an already-correct apps domain unchanged', () => {
+      expect(
+        dt.toGrailUrl('https://abc12345.dev.apps.dynatracelabs.com')
+      ).toEqual('https://abc12345.dev.apps.dynatracelabs.com')
+    })
+
+    it('leaves unrecognized domains unchanged', () => {
+      expect(dt.toGrailUrl('https://dynatrace.example.com')).toEqual(
+        'https://dynatrace.example.com'
+      )
+    })
+  })
+
+  describe('fromGrailUrl', () => {
+    it('rewrites the public SaaS apps domain back to the live domain', () => {
+      expect(dt.fromGrailUrl('https://abc12345.apps.dynatrace.com')).toEqual(
+        'https://abc12345.live.dynatrace.com'
+      )
+    })
+
+    it('removes the apps segment for internal dynatracelabs domains', () => {
+      expect(
+        dt.fromGrailUrl('https://abc12345.dev.apps.dynatracelabs.com')
+      ).toEqual('https://abc12345.dev.dynatracelabs.com')
+    })
+
+    it('leaves an already-classic domain unchanged', () => {
+      expect(dt.fromGrailUrl('https://abc12345.live.dynatrace.com')).toEqual(
+        'https://abc12345.live.dynatrace.com'
+      )
+    })
+
+    it('leaves unrecognized domains unchanged', () => {
+      expect(dt.fromGrailUrl('https://dynatrace.example.com')).toEqual(
+        'https://dynatrace.example.com'
+      )
+    })
+  })
+
+  describe('resolveSmartscapeNodes', () => {
+    const mockPost = jest.fn()
+    const mockGet = jest.fn()
+    const MockHttpClient = httpm.HttpClient as unknown as jest.Mock
+
+    beforeEach(() => {
+      MockHttpClient.mockImplementation(() => ({
+        post: mockPost,
+        get: mockGet
+      }))
+    })
+
+    afterEach(() => {
+      jest.useRealTimers()
+    })
+
+    it('resolves nodes matching the supplied filter', async () => {
+      // The mock only returns a match when the filter we passed in actually
+      // reached the query body - this proves the result depends on the
+      // argument, without inspecting how the HTTP client was called.
+      mockPost.mockImplementation(async (_url: string, body: string) => {
+        const { query } = JSON.parse(body) as { query: string }
+        const records = query.includes('type=="HOST"')
+          ? [{ id: 'HOST-1', type: 'HOST', name: 'host-a' }]
+          : []
+        return {
+          message: { statusCode: 200 },
+          readBody: async () =>
+            JSON.stringify({ state: 'SUCCEEDED', result: { records } })
+        }
+      })
+
+      const nodes = await dt.resolveSmartscapeNodes(
+        'https://example.live.dynatrace.com',
+        'mytoken',
+        'type=="HOST"'
+      )
+
+      expect(nodes).toEqual([{ id: 'HOST-1', type: 'HOST', name: 'host-a' }])
+    })
+
+    it('returns an empty array when no records match', async () => {
+      mockPost.mockResolvedValue({
+        message: { statusCode: 200 },
+        readBody: jest
+          .fn()
+          .mockResolvedValue(
+            JSON.stringify({ state: 'SUCCEEDED', result: { records: [] } })
+          )
+      })
+
+      const nodes = await dt.resolveSmartscapeNodes(
+        'https://example.live.dynatrace.com',
+        'mytoken',
+        'type=="HOST"'
+      )
+      expect(nodes).toEqual([])
+    })
+
+    it('polls until the query succeeds', async () => {
+      jest.useFakeTimers()
+      mockPost.mockResolvedValue({
+        message: { statusCode: 200 },
+        readBody: jest
+          .fn()
+          .mockResolvedValue(
+            JSON.stringify({ state: 'RUNNING', requestToken: 'token-1' })
+          )
+      })
+      // The mock only returns the matched node once it sees the request
+      // token round-tripped into the poll request - this proves polling
+      // actually happened, without asserting on the mock call directly.
+      mockGet.mockImplementation(async (url: string) => {
+        const records = url.includes('request-token=token-1')
+          ? [{ id: 'HOST-1', type: 'HOST' }]
+          : []
+        return {
+          message: { statusCode: 200 },
+          readBody: async () =>
+            JSON.stringify({ state: 'SUCCEEDED', result: { records } })
+        }
+      })
+
+      const promise = dt.resolveSmartscapeNodes(
+        'https://example.live.dynatrace.com',
+        'mytoken',
+        'type=="HOST"'
+      )
+      await jest.advanceTimersByTimeAsync(1000)
+      const nodes = await promise
+
+      expect(nodes).toEqual([{ id: 'HOST-1', type: 'HOST' }])
+    })
+
+    it('times out waiting for the query to complete', async () => {
+      jest.useFakeTimers()
+      mockPost.mockResolvedValue({
+        message: { statusCode: 200 },
+        readBody: jest
+          .fn()
+          .mockResolvedValue(
+            JSON.stringify({ state: 'RUNNING', requestToken: 'token-1' })
+          )
+      })
+      mockGet.mockResolvedValue({
+        message: { statusCode: 200 },
+        readBody: jest
+          .fn()
+          .mockResolvedValue(
+            JSON.stringify({ state: 'RUNNING', requestToken: 'token-1' })
+          )
+      })
+
+      const promise = dt.resolveSmartscapeNodes(
+        'https://example.live.dynatrace.com',
+        'mytoken',
+        'type=="HOST"'
+      )
+      // Attach the rejection handler before advancing timers so it isn't reported as unhandled.
+      // eslint-disable-next-line jest/valid-expect
+      const assertion = expect(promise).rejects.toThrow('Timed out waiting')
+      await jest.advanceTimersByTimeAsync(31000)
+      await assertion
+    })
+
+    it('fails on a non-200 HTTP response from query:poll', async () => {
+      jest.useFakeTimers()
+      mockPost.mockResolvedValue({
+        message: { statusCode: 200 },
+        readBody: jest
+          .fn()
+          .mockResolvedValue(
+            JSON.stringify({ state: 'RUNNING', requestToken: 'token-1' })
+          )
+      })
+      mockGet.mockResolvedValue({
+        message: { statusCode: 500 },
+        readBody: jest.fn().mockResolvedValue('server error')
+      })
+
+      const promise = dt.resolveSmartscapeNodes(
+        'https://example.live.dynatrace.com',
+        'mytoken',
+        'type=="HOST"'
+      )
+      // Attach the rejection handler before advancing timers so it isn't reported as unhandled.
+      // eslint-disable-next-line jest/valid-expect
+      const assertion = expect(promise).rejects.toThrow(
+        'Dynatrace Grail query poll failed - 500'
+      )
+      await jest.advanceTimersByTimeAsync(1000)
+      await assertion
+    })
+
+    it('fails when the query terminates in a non-SUCCEEDED state', async () => {
+      mockPost.mockResolvedValue({
+        message: { statusCode: 200 },
+        readBody: jest
+          .fn()
+          .mockResolvedValue(JSON.stringify({ state: 'FAILED' }))
+      })
+
+      await expect(
+        dt.resolveSmartscapeNodes(
+          'https://example.live.dynatrace.com',
+          'mytoken',
+          'type=="HOST"'
+        )
+      ).rejects.toThrow('state: FAILED')
+    })
+
+    it('fails on a non-200 HTTP response from query:execute', async () => {
+      mockPost.mockResolvedValue({
+        message: { statusCode: 403 },
+        readBody: jest.fn().mockResolvedValue('forbidden')
+      })
+
+      await expect(
+        dt.resolveSmartscapeNodes(
+          'https://example.live.dynatrace.com',
+          'mytoken',
+          'type=="HOST"'
+        )
+      ).rejects.toThrow('Dynatrace Grail query request failed - 403')
+    })
+
+    it('rejects a blank filter', async () => {
+      await expect(
+        dt.resolveSmartscapeNodes(
+          'https://example.live.dynatrace.com',
+          'mytoken',
+          '   '
+        )
+      ).rejects.toThrow("'nodeSelectorFilter' must not be empty")
+    })
+  })
+
   describe('sendEvents', () => {
     const mockPost = jest.fn()
+    const mockGet = jest.fn()
     const mockReadBody = jest.fn()
     const MockHttpClient = httpm.HttpClient as unknown as jest.Mock
 
     beforeEach(() => {
       MockHttpClient.mockImplementation(() => ({
-        post: mockPost
+        post: mockPost,
+        get: mockGet
       }))
       mockReadBody.mockResolvedValue(
         '{"reportCount":1,"eventIngestResults":[{"correlationId":"abc","status":"OK"}]}'
@@ -373,6 +624,209 @@ describe('dynatrace', () => {
       ).rejects.toThrow('HTTP request failed - 400')
       expect(jest.mocked(core.setFailed)).toHaveBeenCalledWith(
         expect.stringContaining('Failed after 2 attempts')
+      )
+    })
+
+    it('fails and skips an event with an unsupported type', async () => {
+      const events: Event[] = [{ title: 'Bad Event', type: 'CUSTOM_INVALID' }]
+      await dt.sendEvents(
+        'https://example.live.dynatrace.com',
+        'mytoken',
+        events
+      )
+      expect(jest.mocked(core.setFailed)).toHaveBeenCalledWith(
+        expect.stringContaining('Unsupported Event type')
+      )
+    })
+
+    it('fails and skips a nodeSelectorFilter event with an unsupported type', async () => {
+      // The query resolves a node fine - the failure being tested comes
+      // from the event's own type, once the fan-out tries to build its payload.
+      mockPost.mockResolvedValue({
+        message: { statusCode: 200 },
+        readBody: jest.fn().mockResolvedValue(
+          JSON.stringify({
+            state: 'SUCCEEDED',
+            result: { records: [{ id: 'HOST-1', type: 'HOST' }] }
+          })
+        )
+      })
+
+      const events: Event[] = [
+        {
+          title: 'Bad Event',
+          type: 'CUSTOM_INVALID',
+          nodeSelectorFilter: 'type=="HOST"'
+        }
+      ]
+      await dt.sendEvents(
+        'https://example.live.dynatrace.com',
+        'mytoken',
+        events
+      )
+
+      expect(jest.mocked(core.setFailed)).toHaveBeenCalledWith(
+        expect.stringContaining('Unsupported Event type')
+      )
+    })
+
+    it('keeps entitySelector working and warns about its deprecation', async () => {
+      const events: Event[] = [
+        {
+          title: 'Test Event',
+          type: 'CUSTOM_INFO',
+          entitySelector: 'type(host),entityName(myHost)'
+        }
+      ]
+      await dt.sendEvents(
+        'https://example.live.dynatrace.com',
+        'mytoken',
+        events
+      )
+
+      expect(mockPost).toHaveBeenCalledWith(
+        'https://example.live.dynatrace.com/api/v2/events/ingest',
+        expect.stringContaining(
+          '"entitySelector":"type(host),entityName(myHost)"'
+        )
+      )
+      expect(jest.mocked(core.warning)).toHaveBeenCalledWith(
+        expect.stringContaining("'entitySelector'")
+      )
+    })
+
+    it('resolves nodeSelectorFilter and sends one event per matched Smartscape node', async () => {
+      mockPost.mockImplementation(async (url: string) => {
+        if (url.includes('query:execute')) {
+          return {
+            message: { statusCode: 200 },
+            readBody: async () =>
+              JSON.stringify({
+                state: 'SUCCEEDED',
+                result: {
+                  records: [
+                    { id: 'HOST-1', type: 'HOST', name: 'host-a' },
+                    { id: 'SERVICE-1', type: 'SERVICE', name: 'svc-a' }
+                  ]
+                }
+              })
+          }
+        }
+        return { message: { statusCode: 201 }, readBody: mockReadBody }
+      })
+
+      const events: Event[] = [
+        {
+          title: 'Test Event',
+          type: 'CUSTOM_INFO',
+          nodeSelectorFilter: 'type=="SERVICE"',
+          properties: { source: 'GitHub' }
+        }
+      ]
+      await dt.sendEvents(
+        'https://example.live.dynatrace.com',
+        'mytoken',
+        events
+      )
+
+      const eventsIngestUrl =
+        'https://example.live.dynatrace.com/api/v2/events/ingest'
+
+      // One event per matched node, each carrying that node's Smartscape
+      // properties plus the user-supplied properties.
+      expect(mockPost).toHaveBeenCalledWith(
+        eventsIngestUrl,
+        expect.stringContaining('"dt.smartscape_source.id":"HOST-1"')
+      )
+      expect(mockPost).toHaveBeenCalledWith(
+        eventsIngestUrl,
+        expect.stringContaining('"dt.smartscape_source.id":"SERVICE-1"')
+      )
+      expect(mockPost).toHaveBeenCalledWith(
+        eventsIngestUrl,
+        expect.stringContaining('"source":"GitHub"')
+      )
+      // entitySelector should never appear on nodeSelectorFilter-resolved events.
+      expect(mockPost).not.toHaveBeenCalledWith(
+        eventsIngestUrl,
+        expect.stringContaining('entitySelector')
+      )
+    })
+
+    it('ignores entitySelector and warns when nodeSelectorFilter is also set', async () => {
+      mockGet.mockResolvedValue({
+        message: { statusCode: 200 },
+        readBody: jest.fn().mockResolvedValue(
+          JSON.stringify({
+            state: 'SUCCEEDED',
+            result: { records: [{ id: 'HOST-1', type: 'HOST' }] }
+          })
+        )
+      })
+      mockPost.mockImplementation(async (url: string) => {
+        if (url.includes('query:execute')) {
+          return {
+            message: { statusCode: 200 },
+            readBody: async () =>
+              JSON.stringify({
+                state: 'SUCCEEDED',
+                result: { records: [{ id: 'HOST-1', type: 'HOST' }] }
+              })
+          }
+        }
+        return { message: { statusCode: 201 }, readBody: mockReadBody }
+      })
+
+      const events: Event[] = [
+        {
+          title: 'Test Event',
+          type: 'CUSTOM_INFO',
+          entitySelector: 'type(host)',
+          nodeSelectorFilter: 'type=="HOST"'
+        }
+      ]
+      await dt.sendEvents(
+        'https://example.live.dynatrace.com',
+        'mytoken',
+        events
+      )
+
+      expect(jest.mocked(core.warning)).toHaveBeenCalledWith(
+        expect.stringContaining('ignored')
+      )
+      expect(mockPost).not.toHaveBeenCalledWith(
+        'https://example.live.dynatrace.com/api/v2/events/ingest',
+        expect.stringContaining('entitySelector')
+      )
+    })
+
+    it('warns and skips sending when nodeSelectorFilter matches no nodes', async () => {
+      mockPost.mockImplementation(async (url: string) => {
+        if (url.includes('query:execute')) {
+          return {
+            message: { statusCode: 200 },
+            readBody: async () =>
+              JSON.stringify({ state: 'SUCCEEDED', result: { records: [] } })
+          }
+        }
+        return { message: { statusCode: 201 }, readBody: mockReadBody }
+      })
+
+      const events: Event[] = [
+        {
+          title: 'Test Event',
+          type: 'CUSTOM_INFO',
+          nodeSelectorFilter: 'type=="HOST"'
+        }
+      ]
+      await dt.sendEvents(
+        'https://example.live.dynatrace.com',
+        'mytoken',
+        events
+      )
+
+      expect(jest.mocked(core.warning)).toHaveBeenCalledWith(
+        expect.stringContaining('No Smartscape nodes matched')
       )
     })
   })

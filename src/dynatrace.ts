@@ -25,6 +25,7 @@ const SUPPORTED_EVENT_TYPES: string[] = [
 
 export type Properties = { [key: string]: string }
 export type Dimensions = { [key: string]: string }
+export type EventPayload = { [key: string]: number | string | Properties }
 
 export interface SdlcEvent {
   'event.id': string | number
@@ -46,7 +47,28 @@ export interface Event {
   startTime?: number
   endTime?: number
   entitySelector?: string
+  nodeSelectorFilter?: string
   properties?: Properties
+}
+
+export interface SmartscapeNode {
+  id: string
+  type: string
+  name?: string
+}
+
+interface QueryResponse {
+  state:
+    | 'NOT_STARTED'
+    | 'RUNNING'
+    | 'SUCCEEDED'
+    | 'RESULT_GONE'
+    | 'CANCELLED'
+    | 'FAILED'
+  requestToken?: string
+  result?: {
+    records: (Record<string, unknown> | null)[]
+  }
 }
 
 interface EventIngestResult {
@@ -58,6 +80,9 @@ interface EventIngestResponse {
   reportCount?: number
   eventIngestResults?: EventIngestResult[]
 }
+
+const QUERY_POLL_INTERVAL_MS = 1000
+const QUERY_POLL_TIMEOUT_MS = 30000
 
 export function safeKey(key: string): string {
   return key.toLowerCase().replace(/[^.0-9a-z_-]/gi, '_')
@@ -85,7 +110,7 @@ export function metric2line(metric: Metric): string {
     if (SUPPORTED_METRIC_FORMATS.includes(metric.format)) {
       line += ` ${metric.format},${metric.value}`
     } else {
-      throw Error(
+      throw new Error(
         `Unsupported Metric format for '${metric.metric}' - ${metric.format}`
       )
     }
@@ -97,10 +122,8 @@ export function metric2line(metric: Metric): string {
   return line
 }
 
-export function event2payload(event: Event): {
-  [key: string]: number | string | Properties
-} {
-  let payload: { [key: string]: number | string | Properties } = {}
+export function event2payload(event: Event): EventPayload {
+  let payload: EventPayload = {}
   if (SUPPORTED_EVENT_TYPES.includes(event.type)) {
     // start with type and title
     payload = {
@@ -125,7 +148,9 @@ export function event2payload(event: Event): {
 
     return payload
   } else {
-    throw Error(`Unsupported Event type for '${event.title}' - ${event.type}`)
+    throw new Error(
+      `Unsupported Event type for '${event.title}' - ${event.type}`
+    )
   }
 }
 
@@ -135,7 +160,7 @@ export function validateEventIngestResponse(body: string): void {
   try {
     parsedResponse = JSON.parse(body) as EventIngestResponse
   } catch (error) {
-    throw Error(
+    throw new Error(
       `Dynatrace event ingest returned invalid JSON: ${(error as Error).message}`
     )
   }
@@ -147,10 +172,158 @@ export function validateEventIngestResponse(body: string): void {
   )
 
   if (reportCount <= 0 || successfulIngestions.length === 0) {
-    throw Error(
+    throw new Error(
       `Dynatrace event ingest accepted the request but did not ingest any events: ${body}`
     )
   }
+}
+
+function parseQueryResponse(body: string): QueryResponse {
+  try {
+    return JSON.parse(body) as QueryResponse
+  } catch (error) {
+    throw new Error(
+      `Dynatrace Grail query returned invalid JSON: ${(error as Error).message}`
+    )
+  }
+}
+
+function recordsToSmartscapeNodes(
+  records: (Record<string, unknown> | null)[]
+): SmartscapeNode[] {
+  const nodes: SmartscapeNode[] = []
+
+  for (const record of records) {
+    if (!record) continue
+
+    const { id, type, name } = record
+    if (typeof id !== 'string' || typeof type !== 'string') {
+      core.warning(
+        `Skipping Smartscape node record missing 'id' or 'type': ${JSON.stringify(record)}`
+      )
+      continue
+    }
+
+    nodes.push({ id, type, name: typeof name === 'string' ? name : undefined })
+  }
+
+  return nodes
+}
+
+// The Grail Query API is served from the AppEngine gateway domain, not the
+// classic environment domain used for the events/metrics ingest APIs.
+// Covers both the public SaaS domain and Dynatrace's internal pre-release
+// (dev/hardening) domains, which use a different naming convention.
+export function toGrailUrl(url: string): string {
+  if (url.endsWith('.live.dynatrace.com')) {
+    return url.replace(/\.live\.dynatrace\.com$/, '.apps.dynatrace.com')
+  }
+  if (
+    url.endsWith('.dynatracelabs.com') &&
+    !url.endsWith('.apps.dynatracelabs.com')
+  ) {
+    return url.replace(/\.dynatracelabs\.com$/, '.apps.dynatracelabs.com')
+  }
+  return url
+}
+
+// The reverse of toGrailUrl(): the classic events/metrics/SDLC ingest APIs
+// are served from the environment domain, not the AppEngine gateway domain.
+// Normalizes `url` back to that domain in case it was configured as the
+// gateway domain instead.
+export function fromGrailUrl(url: string): string {
+  if (url.endsWith('.apps.dynatrace.com')) {
+    return url.replace(/\.apps\.dynatrace\.com$/, '.live.dynatrace.com')
+  }
+  if (url.endsWith('.apps.dynatracelabs.com')) {
+    return url.replace(/\.apps\.dynatracelabs\.com$/, '.dynatracelabs.com')
+  }
+  return url
+}
+
+export async function resolveSmartscapeNodes(
+  url: string,
+  token: string,
+  filter: string
+): Promise<SmartscapeNode[]> {
+  if (!filter.trim()) {
+    throw new Error(`'nodeSelectorFilter' must not be empty`)
+  }
+
+  const grailUrl = toGrailUrl(url)
+  const query = `smartscapeNodes "*" | filter ${filter} | fields id, type, name`
+  const http: httpm.HttpClient = getClient(token, 'application/json')
+
+  const startUrl = `${grailUrl}/platform/storage/query/v1/query:execute`
+  const startPayload = JSON.stringify({
+    query,
+    requestTimeoutMilliseconds: QUERY_POLL_TIMEOUT_MS
+  })
+  core.debug(`Grail query request: POST ${startUrl} body=${startPayload}`)
+
+  const startRes: httpm.HttpClientResponse = await http.post(
+    startUrl,
+    startPayload
+  )
+  const startBody = await startRes.readBody()
+  core.debug(
+    `Grail query response: ${startRes.message.statusCode} body=${startBody}`
+  )
+  if (startRes.message.statusCode !== 200) {
+    throw new Error(
+      `Dynatrace Grail query request failed - ${startRes.message.statusCode}: ${startBody}`
+    )
+  }
+
+  let queryResponse = parseQueryResponse(startBody)
+  const deadline = Date.now() + QUERY_POLL_TIMEOUT_MS
+
+  while (
+    (queryResponse.state === 'RUNNING' ||
+      queryResponse.state === 'NOT_STARTED') &&
+    Date.now() < deadline
+  ) {
+    if (!queryResponse.requestToken) {
+      throw new Error(
+        `Dynatrace Grail query did not return a request token to poll for results`
+      )
+    }
+
+    await new Promise(resolve => setTimeout(resolve, QUERY_POLL_INTERVAL_MS))
+
+    const pollUrl = `${grailUrl}/platform/storage/query/v1/query:poll?request-token=${encodeURIComponent(queryResponse.requestToken)}`
+    core.debug(`Grail query poll request: GET ${pollUrl}`)
+
+    const pollRes: httpm.HttpClientResponse = await http.get(pollUrl)
+    const pollBody = await pollRes.readBody()
+    core.debug(
+      `Grail query poll response: ${pollRes.message.statusCode} body=${pollBody}`
+    )
+    if (pollRes.message.statusCode !== 200) {
+      throw new Error(
+        `Dynatrace Grail query poll failed - ${pollRes.message.statusCode}: ${pollBody}`
+      )
+    }
+
+    queryResponse = parseQueryResponse(pollBody)
+  }
+
+  if (
+    queryResponse.state === 'RUNNING' ||
+    queryResponse.state === 'NOT_STARTED'
+  ) {
+    throw new Error(
+      `Timed out waiting for Dynatrace Grail query to complete for filter '${filter}'`
+    )
+  }
+
+  if (queryResponse.state !== 'SUCCEEDED') {
+    throw new Error(
+      `Dynatrace Grail query did not succeed (state: ${queryResponse.state}) for filter '${filter}'`
+    )
+  }
+
+  return recordsToSmartscapeNodes(queryResponse.result?.records ?? [])
 }
 
 export async function sendMetrics(
@@ -161,6 +334,7 @@ export async function sendMetrics(
 ): Promise<void> {
   core.info(`Sending ${metrics.length} metric(s)`)
 
+  const classicUrl = fromGrailUrl(url)
   const lines: string[] = []
   for (const metric of metrics) {
     try {
@@ -180,7 +354,7 @@ export async function sendMetrics(
     try {
       const http: httpm.HttpClient = getClient(token, 'text/plain')
       const res: httpm.HttpClientResponse = await http.post(
-        `${url}/api/v2/metrics/ingest`,
+        `${classicUrl}/api/v2/metrics/ingest`,
         lines.join('\n')
       )
 
@@ -228,6 +402,95 @@ export async function sendEvents(
   }
 }
 
+async function postEvent(
+  url: string,
+  token: string,
+  payload: EventPayload
+): Promise<void> {
+  core.info(JSON.stringify(payload))
+
+  const http: httpm.HttpClient = getClient(token, 'application/json')
+  const res: httpm.HttpClientResponse = await http.post(
+    `${fromGrailUrl(url)}/api/v2/events/ingest`,
+    JSON.stringify(payload)
+  )
+
+  const responseBody = await res.readBody()
+  core.info(responseBody)
+
+  if (res.message.statusCode !== 201) {
+    throw new Error(
+      `HTTP request failed - ${res.message.statusCode}: ${responseBody}`
+    )
+  }
+
+  validateEventIngestResponse(responseBody)
+}
+
+async function buildSmartscapePayloads(
+  url: string,
+  token: string,
+  event: Event
+): Promise<EventPayload[] | null> {
+  const nodes = await resolveSmartscapeNodes(
+    url,
+    token,
+    event.nodeSelectorFilter as string
+  )
+
+  if (nodes.length === 0) {
+    core.warning(
+      `No Smartscape nodes matched 'nodeSelectorFilter' for event '${event.title}' - skipping.`
+    )
+    return null
+  }
+
+  let basePayload: EventPayload
+  try {
+    basePayload = event2payload({ ...event, entitySelector: undefined })
+  } catch (error) {
+    core.setFailed((error as Error).message)
+    return null
+  }
+
+  return nodes.map(node => ({
+    ...basePayload,
+    properties: {
+      ...event.properties,
+      'dt.smartscape_source.id': node.id,
+      'dt.smartscape_source.type': node.type
+    }
+  }))
+}
+
+async function buildEventPayload(
+  url: string,
+  token: string,
+  event: Event
+): Promise<EventPayload[]> {
+  if (event.nodeSelectorFilter) {
+    if (event.entitySelector) {
+      core.warning(
+        `Event '${event.title}' sets both 'entitySelector' and 'nodeSelectorFilter' - 'entitySelector' is ignored.`
+      )
+    }
+    return (await buildSmartscapePayloads(url, token, event)) ?? []
+  }
+
+  if (event.entitySelector) {
+    core.warning(
+      `Event '${event.title}' uses 'entitySelector', which is deprecated for Dynatrace SaaS tenants on Smartscape 2 / Grail (Phase 3). Use 'nodeSelectorFilter' instead.`
+    )
+  }
+
+  try {
+    return [event2payload(event)]
+  } catch (error) {
+    core.setFailed((error as Error).message)
+    return []
+  }
+}
+
 async function sendEventsInternal(
   url: string,
   token: string,
@@ -235,37 +498,17 @@ async function sendEventsInternal(
 ): Promise<void> {
   core.info(`Sending ${events.length} event(s)`)
 
-  let payload = {}
-  for (const event of events) {
-    try {
-      payload = event2payload(event)
-      core.info(JSON.stringify(payload))
-    } catch (error) {
-      core.setFailed((error as Error).message)
-      continue
-    }
+  const payloads = (
+    await Promise.all(events.map(async e => buildEventPayload(url, token, e)))
+  ).flat()
 
-    const http: httpm.HttpClient = getClient(token, 'application/json')
-    const res: httpm.HttpClientResponse = await http.post(
-      `${url}/api/v2/events/ingest`,
-      JSON.stringify(payload)
-    )
-
-    const responseBody = await res.readBody()
-    core.info(responseBody)
-
-    if (res.message.statusCode !== 201) {
-      throw Error(`HTTP request failed - ${res.message.statusCode}`)
-    }
-
-    validateEventIngestResponse(responseBody)
-  }
+  await Promise.all(payloads.map(async p => postEvent(url, token, p)))
 }
 
 export function validateSdlcEvent(event: SdlcEvent): void {
   const id = event['event.id']
   if (id === undefined || id === null || id === '') {
-    throw Error(`SDLC event is missing required field 'event.id'`)
+    throw new Error(`SDLC event is missing required field 'event.id'`)
   }
 }
 
@@ -315,7 +558,7 @@ async function sendSdlcEventsInternal(
 
   const http: httpm.HttpClient = getClient(token, 'application/json')
   const res: httpm.HttpClientResponse = await http.post(
-    `${url}/platform/ingest/v1/events.sdlc`,
+    `${fromGrailUrl(url)}/platform/ingest/v1/events.sdlc`,
     JSON.stringify(validEvents)
   )
 
@@ -323,7 +566,7 @@ async function sendSdlcEventsInternal(
   if (responseBody) core.info(responseBody)
 
   if (res.message.statusCode !== 202) {
-    throw Error(`HTTP request failed - ${res.message.statusCode}`)
+    throw new Error(`HTTP request failed - ${res.message.statusCode}`)
   }
 }
 

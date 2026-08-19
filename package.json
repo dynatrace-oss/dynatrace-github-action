@@ -34,6 +34,8 @@
     "lint": "npx eslint . -c ./.github/linters/.eslintrc.yaml",
     "package": "npx ncc build src/index.ts -o dist --source-map --license licenses.txt",
     "package:watch": "npm run package -- --watch",
+    "smoke:classic": "node --env-file-if-exists=.env.smoke-test scripts/smoke-classic.mts",
+    "smoke:smartscape": "node --env-file-if-exists=.env.smoke-test scripts/smoke-smartscape.mts",
     "test": "npx jest",
     "all": "npm run format:write && npm run lint && npm run test && npm run coverage && npm run package"
   },
@@ -68,8 +70,8 @@
     ]
   },
   "dependencies": {
-    "@actions/core": "^1.10.1",
-    "@actions/http-client": "^2.2.1",
+    "@actions/core": "^2.0.3",
+    "@actions/http-client": "^3.0.2",
     "@types/js-yaml": "^4.0.9",
     "js-yaml": "^4.3.1"
   },
@@ -88,7 +90,6 @@
     "jest": "^29.7.0",
     "make-coverage-badge": "^1.2.0",
     "prettier": "^3.2.5",
-    "prettier-eslint": "^16.3.0",
     "ts-jest": "^29.1.5",
     "typescript": "^5.4.4"
   }
