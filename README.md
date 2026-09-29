@@ -23,15 +23,19 @@ This repository was bootstrapped using the
   - [Tags](#tags)
   - [Usage](#usage)
     - [Inputs](#inputs)
-    - [API Token](#api-token)
+    - [API Tokens](#api-tokens)
+      - [Classic Access Tokens](#classic-access-tokens)
+      - [Platform Tokens](#platform-tokens)
     - [Metric Formats](#metric-formats)
     - [Event Types](#event-types)
     - [SDLC Events](#sdlc-events)
   - [Examples](#examples)
     - [Sending a Metric](#sending-a-metric)
     - [Sending an Event](#sending-an-event)
+    - [Sending an Event to Smartscape 2 Nodes](#sending-an-event-to-smartscape-2-nodes)
     - [Sending an SDLC Event](#sending-an-sdlc-event)
   - [Local Development](#local-development)
+    - [Smoke Testing Against a Real Tenant](#smoke-testing-against-a-real-tenant)
   - [Support](#support)
   - [Contributing](#contributing)
   - [License](#license)
@@ -67,10 +71,12 @@ action.
 > 1. `url` should be the LIVE Dynatrace domain, eg:
 >    `https://{your-environment-id}.live.dynatrace.com`
 
-### API Token
+### API Tokens
 
-Your `token` must be a Dynatrace API token with the following permissions
-granted to it:
+#### Classic Access Tokens
+
+For classic tenants, your `token` must be a Dynatrace Access Token (`dt0c01.*`)
+with the following permissions granted to it:
 
 - Read Metrics (`metrics.read`)
 - Read Events (`events.read`)
@@ -78,6 +84,25 @@ granted to it:
 - Ingest Events (`events.ingest`)
 - Ingest SDLC Events (`openpipeline.events_sdlc`) — required only when using
   `sdlc-events`
+
+> [!NOTE]
+>
+> `nodeSelectorFilter` requires a Platform Token — classic access tokens cannot
+> read Grail data.
+
+#### Platform Tokens
+
+For Platform / Grail tenants, your `token` must be a Dynatrace Platform Token
+(`dt0s16.*`) with the following permissions granted to it:
+
+- Read Metrics (`storage:metrics:read`)
+- Read Events (`storage:events:read`)
+- Ingest Metrics (`storage:metrics:write`)
+- Ingest Events (`storage:events:write`)
+- Ingest SDLC Events (`openpipeline.events_sdlc`) — required only when using
+  `sdlc-events`
+- Read Grail buckets (`storage:buckets:read`) and Smartscape
+  (`storage:smartscape:read`) — required only when using `nodeSelectorFilter`
 
 ### Metric Formats
 
@@ -157,6 +182,13 @@ API for help creating selectors. Below are a few examples:
 - `type(host),tag(prod)` - Selects all Hosts with a Tag `prod`.
 - `type(service),entityName(login)` - Selects all Services with the name `login`
 
+> [!WARNING]
+>
+> `entitySelector` is **deprecated** and does not work on Dynatrace SaaS tenants
+> that have migrated to Smartscape 2 / Grail (Phase 3) — it remains fully
+> functional for tenants that haven't migrated yet. For Smartscape 2 tenants,
+> use [`nodeSelectorFilter`](#sending-an-event-to-smartscape-2-nodes) instead.
+
 ```yaml
 - name: Send events to Dynatrace
   uses: dynatrace-oss/dynatrace-github-action@v9
@@ -167,6 +199,43 @@ API for help creating selectors. Below are a few examples:
       - title: GitHub Event
         type: CUSTOM_INFO
         entitySelector: type(host),entityName(myHost)
+        properties:
+          source: GitHub
+          description: This is an example
+          github.repository: "${{ github.repository }}"
+          github.ref: "${{ github.ref }}"
+          github.event_name: "${{ github.event_name }}"
+          github.actor: "${{ github.actor }}"
+```
+
+### Sending an Event to Smartscape 2 Nodes
+
+On Dynatrace SaaS tenants using Smartscape 2 / Grail, entities are resolved via
+a DQL filter instead of the classic `entitySelector`. Set `nodeSelectorFilter`
+to a
+[DQL `smartscapeNodes` filter expression](https://docs.dynatrace.com/docs/platform/grail/dynatrace-query-language/commands/smartscape-commands)
+and the action will:
+
+1. Query Grail for all Smartscape nodes matching the filter.
+1. Send the event once per matched node, automatically attaching
+   `dt.smartscape_source.id` and `dt.smartscape_source.type` properties for that
+   node (in addition to any `properties` you configure).
+
+If a node matches zero entities, the event is skipped for that run and a warning
+is logged — the workflow step is not failed. If both `entitySelector` and
+`nodeSelectorFilter` are set on the same event, `nodeSelectorFilter` takes
+precedence and `entitySelector` is ignored.
+
+```yaml
+- name: Send events to Dynatrace
+  uses: dynatrace-oss/dynatrace-github-action@v9
+  with:
+    url: ${{ secrets.DT_URL }}
+    token: ${{ secrets.DT_TOKEN }}
+    events: |
+      - title: GitHub Event
+        type: CUSTOM_INFO
+        nodeSelectorFilter: 'type=="SERVICE" and name == "astroshop-shipping"'
         properties:
           source: GitHub
           description: This is an example
@@ -210,6 +279,36 @@ Lint, test and build the TypeScript and package it for distribution
 ```bash
 npm run all
 ```
+
+### Smoke Testing Against a Real Tenant
+
+`npm test` only runs against mocked HTTP calls. To verify behavior against a
+real Dynatrace tenant (e.g. after changing anything in `src/dynatrace.ts`), run
+the local-only smoke test scripts. They are **never run in CI** and never touch
+GitHub Secrets — they read tenant URLs/tokens from your local environment only.
+
+Create an untracked `.env.smoke-test` file (already gitignored) in the
+repository root:
+
+```bash
+DT_CLASSIC_URL=https://{classic-environment-id}.live.dynatrace.com
+DT_CLASSIC_TOKEN=dt0c01.xxxxx
+DT_SMARTSCAPE_URL=https://{smartscape-2-environment-id}.live.dynatrace.com
+DT_SMARTSCAPE_TOKEN=dt0c01.xxxxx
+# Optional overrides:
+# DT_ENTITY_SELECTOR=type(HOST)
+# DT_SMARTSCAPE_NODE_FILTER=type=="HOST"
+```
+
+Then run either or both, depending on which tenant you want to verify against:
+
+```bash
+npm run smoke:classic     # entitySelector + a metric, against a classic tenant
+npm run smoke:smartscape  # entitySelector (expected no-op) + nodeSelectorFilter, against a Smartscape 2 / Grail tenant
+```
+
+Each prints the result of every scenario so you can cross-check the actual
+events/metrics in the Dynatrace UI.
 
 ## Support
 
